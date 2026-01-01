@@ -80,7 +80,7 @@ export default function ShadFooter() {
                   <Building className="size-8 text-white" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold tracking-tight text-gray-200">FinBank</div>
+                  <div className="text-2xl font-bold tracking-tight text-gray-200">fidelityOffshoreBank</div>
                   <div className="text-sm text-gray-500">Trusted Banking Since 1995</div>
                 </div>
               </div>
@@ -113,7 +113,7 @@ export default function ShadFooter() {
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="size-4 text-blue-600" />
-                <span className="text-sm text-gray-600">support@finbank.com</span>
+                <span className="text-sm text-gray-600">support@fidelityOffshoreBank.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <Clock className="size-4 text-blue-600" />
@@ -267,7 +267,7 @@ export default function ShadFooter() {
 
           {/* Copyright */}
           <div className="text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} FinBank Corporation. All rights reserved. Member FDIC.
+            © {new Date().getFullYear()} fidelityOffshoreBank Corporation. All rights reserved. Member FDIC.
           </div>
 
           {/* Social Links */}
@@ -289,7 +289,7 @@ export default function ShadFooter() {
         <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="text-xs text-gray-500">
-              FinBank is regulated by the Office of the Comptroller of the Currency (OCC). 
+              fidelityOffshoreBank is regulated by the Office of the Comptroller of the Currency (OCC). 
               Deposits are FDIC insured up to $250,000 per depositor.
             </div>
             <div className="flex items-center gap-4">

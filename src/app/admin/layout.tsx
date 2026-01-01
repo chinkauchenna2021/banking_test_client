@@ -1,6 +1,6 @@
 "use client";
 
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth'; // Your custom auth hook
 import AdminSidebar from '@/components/admin/admin-sidebar';
@@ -11,23 +11,29 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isAuthenticated, isLoading } = useAuth();
+
+
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
-    if (isLoading) return; // Wait for auth check
-
-    if (!isAuthenticated) {
-      // Not logged in at all -> Go to sign in
-      redirect('/auth/sign-in');
-    } 
-    
-    if (isAuthenticated && !user?.is_admin) {
-      // Logged in BUT not admin -> Kick to user dashboard
-      redirect('/dashboard');
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.push('/auth/login')
+      } else if (user && !user.is_admin) {
+        router.push('/dashboard')
+      }
     }
+  }, [user, isAuthenticated, isLoading, router])
 
-    // Logged in AND is_admin -> Allow access (Render children)
-  }, [isAuthenticated, user, isLoading]);
+  if (!user?.is_admin) {
+    return null
+  }
+
+
+
+
+
 
   if (isLoading) {
     return (

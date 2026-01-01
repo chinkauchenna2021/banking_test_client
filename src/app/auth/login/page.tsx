@@ -39,13 +39,23 @@ export default function LoginPage() {
     try {
       await login(loginData.email, loginData.password)
       setLoginSuccess(true)
+      
+      // Get the user data to check if admin
+      const { user } = useAuth()
+      
+      // Redirect based on user role
       setTimeout(() => {
-        router.push('/dashboard')
+        if (user?.is_admin) {
+          router.push('/admin')
+        } else {
+          router.push('/dashboard')
+        }
       }, 1500)
     } catch (error) {
       console.error('Login failed:', error)
     }
   }
+
 
   const handleDemoLogin = async (type: 'user' | 'admin') => {
     clearError()
@@ -64,8 +74,11 @@ export default function LoginPage() {
     try {
       await login(demoCredentials[type].email, demoCredentials[type].password)
       setLoginSuccess(true)
+      
+      // Since we can't access useAuth hook here synchronously,
+      // we'll handle the redirection based on the login type
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push(type === 'admin' ? '/admin' : '/dashboard')
       }, 1500)
     } catch (error) {
       console.error('Demo login failed:', error)

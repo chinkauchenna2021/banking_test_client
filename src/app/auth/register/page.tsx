@@ -85,43 +85,79 @@ export default function RegisterPage() {
     }
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    clearError()
+  // const handleRegister = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   clearError()
     
-    if (!validateStep(3)) {
-      console.log('Validation failed:', {
-        passwordLength: registrationData.password.length,
-        passwordsMatch: registrationData.password === registrationData.confirmPassword,
-        acceptTerms: registrationData.acceptTerms,
-        acceptPrivacy: registrationData.acceptPrivacy,
-        passwordStrength
-      })
-      return
-    }
+  //   if (!validateStep(3)) {
+  //     console.log('Validation failed:', {
+  //       passwordLength: registrationData.password.length,
+  //       passwordsMatch: registrationData.password === registrationData.confirmPassword,
+  //       acceptTerms: registrationData.acceptTerms,
+  //       acceptPrivacy: registrationData.acceptPrivacy,
+  //       passwordStrength
+  //     })
+  //     return
+  //   }
     
-    try {
-      const userData = {
-        first_name: registrationData.firstName,
-        last_name: registrationData.lastName,
-        email: registrationData.email,
-        phone: registrationData.phone,
-        account_type: registrationData.accountType,
-        password: registrationData.password,
-        password_confirmation: registrationData.confirmPassword,
-        accept_terms: registrationData.acceptTerms,
-      }
+  //   try {
+  //     const userData = {
+  //       first_name: registrationData.firstName,
+  //       last_name: registrationData.lastName,
+  //       email: registrationData.email,
+  //       phone: registrationData.phone,
+  //       account_type: registrationData.accountType,
+  //       password: registrationData.password,
+  //       password_confirmation: registrationData.confirmPassword,
+  //       accept_terms: registrationData.acceptTerms,
+  //     }
       
-      await register(userData)
-      setRegistrationSuccess(true)
+  //     await register(userData)
+  //     setRegistrationSuccess(true)
       
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
-    } catch (error) {
-      console.error('Registration failed:', error)
-    }
+  //     setTimeout(() => {
+  //       router.push('/dashboard')
+  //     }, 2000)
+  //   } catch (error) {
+  //     console.error('Registration failed:', error)
+  //   }
+  // }
+
+
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault()
+  clearError()
+  
+  if (!validateStep(3)) {
+    return
   }
+  
+  try {
+    const userData = {
+      first_name: registrationData.firstName,
+      last_name: registrationData.lastName,
+      email: registrationData.email,
+      phone: registrationData.phone,
+      account_type: registrationData.accountType,
+      password: registrationData.password,
+      password_confirmation: registrationData.confirmPassword,
+      accept_terms: registrationData.acceptTerms,
+      // New users are not admins by default
+      is_admin: false,
+    }
+    
+    await register(userData)
+    setRegistrationSuccess(true)
+    
+    // After registration, user will be redirected based on their role
+    // The AuthProvider will handle this automatically
+  } catch (error) {
+    console.error('Registration failed:', error)
+  }
+}
+
+
+
 
   return (
     <FormContainer

@@ -19,7 +19,7 @@ export default function Layout({ children }: LayoutProps) {
         <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:3000/assets/images/favicons/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:3000/assets/images/favicons/favicon-16x16.png" />
         {/* <link rel="manifest" href="http://localhost:3000/assets/images/favicons/site.webmanifest" /> */}
-        <meta name="description" content="Finbank HTML 5 Template " />
+        <meta name="description" content="fidelity Offshore Bank" />
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet" />
         <link

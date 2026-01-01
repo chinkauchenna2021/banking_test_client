@@ -20,7 +20,7 @@ const testimonials: Testimonial[] = [
     name: 'Nathan Felix',
     location: 'California',
     image: '/assets/images/testimonial/testimonial-v1-1.jpg',
-    text: 'Experience with Finbank has been very accommodating for they have online banking. When I need to transfer funds and pay bills it can be done at my convenience.',
+    text: 'Experience with fidelityOffshoreBank has been very accommodating for they have online banking. When I need to transfer funds and pay bills it can be done at my convenience.',
     rating: 5
   },
   {

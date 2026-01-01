@@ -257,11 +257,11 @@ export default function FAQPage() {
                           Send us an email and we'll get back to you as soon as possible.
                         </p>
                         <a 
-                          href="mailto:support@finbank.com" 
+                          href="mailto:support@fidelityOffshoreBank.com" 
                           className="contact-email inline-flex items-center gap-3 text-blue-600 font-semibold text-lg"
                         >
                           <i className="far fa-envelope text-base"></i>
-                          support@finbank.com
+                          support@fidelityOffshoreBank.com
                         </a>
                       </div>
                     </div>

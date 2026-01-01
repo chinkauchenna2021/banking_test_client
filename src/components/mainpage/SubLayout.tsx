@@ -82,7 +82,7 @@ export default function FooterSection() {
                   <Building className="size-8 text-white" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold tracking-tight text-white">FinBank</div>
+                  <div className="text-2xl font-bold tracking-tight text-white">fidelityOffshoreBank</div>
                   <div className="text-sm text-gray-400">Trusted Banking Since 1995</div>
                 </div>
               </div>
@@ -119,7 +119,7 @@ export default function FooterSection() {
                 <div className="rounded-lg bg-gray-800 p-2">
                   <Mail className="size-4 text-blue-400" />
                 </div>
-                <span className="text-sm text-gray-400">support@finbank.com</span>
+                <span className="text-sm text-gray-400">support@fidelityOffshoreBank.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-gray-800 p-2">
@@ -325,7 +325,7 @@ export default function FooterSection() {
 
           {/* Copyright */}
           <div className="text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} FinBank Corporation. All rights reserved. Member FDIC.
+            © {new Date().getFullYear()} fidelityOffshoreBank Corporation. All rights reserved. Member FDIC.
           </div>
 
           {/* Social Links */}
@@ -347,7 +347,7 @@ export default function FooterSection() {
         <div className="mt-6 rounded-xl border border-gray-800 bg-gradient-to-r from-gray-900/50 to-gray-900/30 p-4 backdrop-blur-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="text-xs text-gray-400">
-              FinBank is regulated by the Office of the Comptroller of the Currency (OCC). 
+              fidelityOffshoreBank is regulated by the Office of the Comptroller of the Currency (OCC). 
               Deposits are FDIC insured up to $250,000 per depositor.
             </div>
             <div className="flex items-center gap-4">

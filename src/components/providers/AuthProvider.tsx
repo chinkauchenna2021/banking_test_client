@@ -55,6 +55,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+    const { isAuthenticated } = useAuth()
+
+
+useEffect(() => {
+  if (!isLoading && user) {
+    const isAuthPage = pathname?.startsWith('/auth')
+    const isAdminPage = pathname?.startsWith('/admin')
+    const isDashboardPage = pathname?.startsWith('/dashboard')
+    
+    // If user is on admin page but not admin
+    if (isAdminPage && !user.is_admin) {
+      router.push('/dashboard')
+      toast({
+        title: 'Access Denied',
+        description: 'You do not have permission to access the admin area',
+        variant: 'destructive',
+      })
+      return
+    }
+    
+    // If user is admin and trying to access dashboard, redirect to admin
+    if (isDashboardPage && user.is_admin && pathname !== '/admin') {
+      router.push('/admin')
+      return
+    }
+    
+    // If authenticated and trying to access auth pages
+    if (isAuthenticated && isAuthPage && !pathname?.includes('reset-password')) {
+      // Redirect based on user role
+      if (user.is_admin) {
+        router.push('/admin')
+      } else {
+        router.push('/dashboard')
+      }
+    }
+    
+    // If not authenticated on protected pages
+    if (!isAuthenticated && !isAuthPage) {
+      router.push('/auth/login')
+    }
+  }
+}, [isAuthenticated, isLoading, pathname, router, user])
+
+
 
   // Initialize authentication
   useEffect(() => {
