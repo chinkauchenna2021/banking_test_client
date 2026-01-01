@@ -1,3 +1,6 @@
+import { apiClient } from "@/lib/api-client";
+import { create } from "zustand";
+
 // Client-side definition of DepositMethod enum
 export enum DepositMethod {
   bank_transfer = 'bank_transfer',
@@ -163,7 +166,7 @@ export const useDepositStore = create<DepositState>((set, get) => ({
   getDepositMethods: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getDepositMethods<{ data: DepositMethodItem[] }>();
+      const response = await apiClient.getManualDeposits<{ data: DepositMethodItem[] }>();
       set({ depositMethods: response.data, isLoading: false });
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
