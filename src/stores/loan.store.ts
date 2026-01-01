@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { apiClient } from '../lib/api-client';
-import { Loan } from '@prisma/client';
 
-export type UserLoan = Loan;
+export type UserLoan = any;
 
 // Client-side definition for LoanRepayment
 export interface LoanRepayment {
@@ -80,7 +79,7 @@ interface LoanState {
   // User actions
   applyForLoan: (data: { amount: number; term_months: number; purpose: string; loan_type: LoanType; account_id: bigint; }) => Promise<UserLoan>;
   fetchUserLoans: (params?: any) => Promise<void>;
-  checkEligibility: (userId: bigint, criteria: any) => Promise<LoanEligibility>; // Added
+  checkEligibility: (loan_type:any, amount:any, term_months:any) => Promise<LoanEligibility>; // Added
   calculateLoan: (amount: number, termMonths: number, interestRate: number) => Promise<LoanCalculator>; // Added
   makeRepayment: (loanId: string, repaymentData: any) => Promise<any>; // Added
   getRepaymentSchedule: (loanId: string) => Promise<LoanRepayment[]>; // Added
@@ -142,10 +141,10 @@ export const useLoanStore = create<LoanState>((set, get) => ({
     }
   },
 
-  checkEligibility: async (userId, criteria) => {
+  checkEligibility: async (loan_type:any, amount:any, term_months:any) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.checkEligibility<{ data: LoanEligibility }>(userId, criteria);
+      const response = await apiClient.checkEligibility<{ data: LoanEligibility }>({loan_type, amount, term_months});
       set({ eligibility: response.data, isLoading: false });
       return response.data;
     } catch (error: any) {
@@ -158,7 +157,7 @@ export const useLoanStore = create<LoanState>((set, get) => ({
   calculateLoan: async (amount, termMonths, interestRate) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.calculateLoan<{ data: LoanCalculator }>(amount, termMonths, interestRate);
+      const response = await apiClient.calculateLoan<{ data: LoanCalculator }>( {amount, term_months:termMonths, interest_rate:interestRate});
       set({ calculator: response.data, isLoading: false });
       return response.data;
     } catch (error: any) {

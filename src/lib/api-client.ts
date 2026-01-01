@@ -206,6 +206,47 @@ class ApiClient {
     return this.get<T>('/loans', { params });
   }
 
+  // ADDED MISSING LOAN METHODS
+  public checkEligibility<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/loans/eligibility', { params });
+  }
+
+  public calculateLoan<T = any>(data: any): Promise<T> {
+    return this.post<T>('/loans/calculate', data);
+  }
+
+  public getLoanDetails<T = any>(loanId: string): Promise<T> {
+    return this.get<T>(`/loans/${loanId}`);
+  }
+
+  public makeRepayment<T = any>(loanId: string, data: any): Promise<T> {
+    return this.post<T>(`/loans/${loanId}/repay`, data);
+  }
+
+  public getRepaymentSchedule<T = any>(loanId: string): Promise<T> {
+    return this.get<T>(`/loans/${loanId}/schedule`);
+  }
+
+  public getLoanDocuments<T = any>(loanId: string): Promise<T> {
+    return this.get<T>(`/loans/${loanId}/documents`);
+  }
+
+  public uploadLoanDocument<T = any>(loanId: string, formData: FormData): Promise<T> {
+    return this.post<T>(`/loans/${loanId}/documents`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  }
+
+  public cancelLoanApplication<T = any>(loanId: string, reason: string): Promise<T> {
+    return this.post<T>(`/loans/${loanId}/cancel`, { reason });
+  }
+
+  public getLoanSummary<T = any>(): Promise<T> {
+    return this.get<T>('/loans/summary');
+  }
+
   public getPendingLoans<T = any>(params: any = {}): Promise<T> {
     return this.get<T>('/admin/loans', { params: { ...params, status: 'pending' } });
   }
