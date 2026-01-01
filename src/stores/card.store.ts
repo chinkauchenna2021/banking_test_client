@@ -358,5 +358,4 @@ export const useCardStore = create<CardState>((set, get) => ({
       throw new Error(errorMessage);
     }
   },
-  clearError: () => set({ error: null }),
 }));
