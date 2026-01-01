@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 'use client';
 
 import PageContainer from '@/components/layout/page-container';

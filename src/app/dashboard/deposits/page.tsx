@@ -81,9 +81,9 @@ export default function DepositsPage() {
   const { user } = useUser();
   
   const [depositData, setDepositData] = useState({
-    account_id: '',
+    account_id: '' as any,
     amount: '',
-    method: 'bank_transfer',
+    method: DepositMethod.bank_transfer,
     description: ''
   });
   
@@ -139,13 +139,14 @@ export default function DepositsPage() {
     try {
       await initiateDeposit({
         ...depositData,
-        amount: parseFloat(depositData.amount)
-      });
+        amount: parseFloat(depositData.amount),
+        currency: 'USD'
+      } as any);
       
       setDepositData({
         account_id: '',
         amount: '',
-        method: 'bank_transfer',
+        method: DepositMethod.bank_transfer,
         description: ''
       });
       setFees(null);
@@ -321,7 +322,7 @@ export default function DepositsPage() {
                       value={depositData.method}
                       onValueChange={(value) => setDepositData({
                         ...depositData,
-                        method: value
+                        method: value as DepositMethod
                       })}
                     >
                       <SelectTrigger>
