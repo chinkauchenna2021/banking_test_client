@@ -5,22 +5,20 @@ import { useDepositStore, ManualDeposit, DepositMethod, DepositMethodItem } from
 export const useDeposit = () => {
   const {
     depositMethods,
-    deposits,
-    currentDeposit,
+    userDeposits, // Note: your store has 'userDeposits' not 'deposits'
     isLoading,
     error,
     getDepositMethods,
-    initiateDeposit,
-    bankTransferDeposit,
-    cryptoDeposit,
-    cardDeposit,
-    getDeposits,
-    getDepositDetails,
-    cancelDeposit,
-    clearDeposits,
+    createManualDeposit: initiateDeposit, // Rename to match your hook
+    // Note: your store doesn't have these methods:
+    // bankTransferDeposit, cryptoDeposit, cardDeposit
+    // You'll need to add them or remove from destructuring
+    fetchUserDeposits: getDeposits,
     clearError,
-    setLoading,
   } = useDepositStore();
+
+  // Fix: Use the correct property name from your store
+  const deposits = userDeposits;
 
   // Auto-fetch deposit methods on mount
   useEffect(() => {
@@ -30,7 +28,7 @@ export const useDeposit = () => {
       }
     };
     fetchMethods();
-  }, []);
+  }, [depositMethods.length, getDepositMethods]);
 
   // Get deposit by ID
   const getDepositById = useCallback((depositId: string): ManualDeposit | undefined => {
@@ -145,31 +143,24 @@ export const useDeposit = () => {
       amount,
       method,
       payment_method_id: 'quick', // This would be the user's default payment method
+      currency: 'USD'
     };
 
-    return await initiateDeposit(depositData);
+    return await initiateDeposit(depositData as any);
   }, [initiateDeposit]);
 
   return {
     // State
     depositMethods,
     deposits,
-    currentDeposit,
     isLoading,
     error,
 
     // Actions
     getDepositMethods,
     initiateDeposit,
-    bankTransferDeposit,
-    cryptoDeposit,
-    cardDeposit,
     getDeposits,
-    getDepositDetails,
-    cancelDeposit,
-    clearDeposits,
     clearError,
-    setLoading,
 
     // Utility functions
     getDepositById,
