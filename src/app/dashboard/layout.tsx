@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { useEffect } from 'react';
+
 
 export const metadata: Metadata = {
   title: 'Fidelity Offshore Bank - Dashboard',
@@ -25,19 +25,11 @@ export default async function DashboardLayout({
 
     const cookieStore = await cookies();
     const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
-    
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        redirect('/auth/login')
-      } else if (user?.is_admin) {
-        // Redirect admin users to admin dashboard
-        redirect('/admin')
-      }
+    if (!isLoading && !isAuthenticated) {
+      redirect('/auth/login?redirect=/dashboard');
     }
-  }, [user, isAuthenticated, isLoading, redirect]);
 
+  
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
