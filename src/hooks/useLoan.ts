@@ -1,10 +1,10 @@
 import { useEffect, useCallback } from 'react';
-import { useLoanStore, Loan, LoanRepayment, LoanEligibility, LoanCalculator, LoanDocument } from '../stores/loan.store';
+import { useLoanStore, UserLoan, LoanRepayment, LoanEligibility, LoanCalculator, LoanDocument, LoanType } from '../stores/loan.store';
 
 export const useLoan = () => {
   const {
-    loans,
-    currentLoan,
+    userLoans: loans, // Renamed for clarity in the hook
+    // currentLoan, // Removed
     eligibility,
     calculator,
     repaymentSchedule,
@@ -13,8 +13,8 @@ export const useLoan = () => {
     isLoading,
     error,
     applyForLoan,
-    getLoans,
-    getLoanDetails,
+    fetchUserLoans: getLoans, // Renamed for clarity in the hook
+    // getLoanDetails, // Removed
     cancelLoanApplication,
     checkEligibility,
     calculateLoan,
@@ -23,9 +23,9 @@ export const useLoan = () => {
     getLoanDocuments,
     uploadLoanDocument,
     getLoanSummary,
-    clearLoans,
+    // clearLoans, // Not directly exposed by the store
     clearError,
-    setLoading,
+    // setLoading, // Not directly exposed by the store
   } = useLoanStore();
 
   // Auto-fetch loan summary on mount
@@ -36,46 +36,46 @@ export const useLoan = () => {
       }
     };
     fetchSummary();
-  }, []);
+  }, [summary, getLoanSummary]);
 
   // Get loan by ID
-  const getLoanById = useCallback((loanId: string): Loan | undefined => {
+  const getLoanById = useCallback((loanId: string): UserLoan | undefined => {
     return loans.find(loan => loan.id === loanId);
   }, [loans]);
 
   // Get loans by status
-  const getLoansByStatus = useCallback((status: string): Loan[] => {
+  const getLoansByStatus = useCallback((status: string): UserLoan[] => {
     return loans.filter(loan => loan.status === status);
   }, [loans]);
 
   // Get loans by type
-  const getLoansByType = useCallback((type: string): Loan[] => {
+  const getLoansByType = useCallback((type: string): UserLoan[] => {
     return loans.filter(loan => loan.loan_type === type);
   }, [loans]);
 
   // Get active loans
-  const getActiveLoans = useCallback((): Loan[] => {
+  const getActiveLoans = useCallback((): UserLoan[] => {
     return loans.filter(loan => loan.status === 'active');
   }, [loans]);
 
   // Get pending loans
-  const getPendingLoans = useCallback((): Loan[] => {
+  const getPendingLoans = useCallback((): UserLoan[] => {
     return loans.filter(loan => loan.status === 'pending');
   }, [loans]);
 
   // Get total borrowed amount
-  const getTotalBorrowed = useCallback(() => {
-    return loans.reduce((total, loan) => total + parseFloat(loan.amount), 0);
+  const getTotalBorrowed = useCallback((): number => {
+    return loans.reduce((total, loan) => total + loan.amount, 0); // amount is already number
   }, [loans]);
 
   // Get total repaid amount
-  const getTotalRepaid = useCallback(() => {
-    return loans.reduce((total, loan) => total + parseFloat(loan.paid_amount), 0);
+  const getTotalRepaid = useCallback((): number => {
+    return loans.reduce((total, loan) => total + loan.paid_amount, 0); // paid_amount is already number
   }, [loans]);
 
   // Get outstanding balance
-  const getOutstandingBalance = useCallback(() => {
-    return loans.reduce((total, loan) => total + parseFloat(loan.remaining_amount), 0);
+  const getOutstandingBalance = useCallback((): number => {
+    return loans.reduce((total, loan) => total + loan.remaining_amount, 0); // remaining_amount is already number
   }, [loans]);
 
   // Get next repayment
@@ -141,7 +141,7 @@ export const useLoan = () => {
   }, []);
 
   // Check if loan is overdue
-  const isLoanOverdue = useCallback((loan: Loan): boolean => {
+  const isLoanOverdue = useCallback((loan: UserLoan): boolean => {
     const overdueRepayments = getOverdueRepayments();
     return overdueRepayments.length > 0;
   }, [getOverdueRepayments]);
@@ -151,14 +151,14 @@ export const useLoan = () => {
     amount: number, 
     termMonths: number, 
     purpose: string,
-    accountId: string
+    accountId: bigint
   ) => {
     const loanData = {
       account_id: accountId,
       amount,
       term_months: termMonths,
       purpose,
-      loan_type: 'personal', // Default to personal loan
+      loan_type: LoanType.personal, // Default to personal loan
     };
 
     return await applyForLoan(loanData);
@@ -167,7 +167,7 @@ export const useLoan = () => {
   return {
     // State
     loans,
-    currentLoan,
+    // currentLoan, // Removed
     eligibility,
     calculator,
     repaymentSchedule,
@@ -179,7 +179,7 @@ export const useLoan = () => {
     // Actions
     applyForLoan,
     getLoans,
-    getLoanDetails,
+    // getLoanDetails, // Removed
     cancelLoanApplication,
     checkEligibility,
     calculateLoan,
@@ -188,9 +188,9 @@ export const useLoan = () => {
     getLoanDocuments,
     uploadLoanDocument,
     getLoanSummary,
-    clearLoans,
+    // clearLoans,
     clearError,
-    setLoading,
+    // setLoading,
 
     // Utility functions
     getLoanById,

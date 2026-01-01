@@ -213,6 +213,50 @@ class ApiClient {
   public rejectCardRequest<T = any>(cardId: string, reason: string): Promise<T> {
     return this.post<T>(`/admin/cards/${cardId}/reject`, { reason });
   }
+
+  public getCardTransactions<T = any>(cardId: string, params: any = {}): Promise<T> {
+    return this.get<T>(`/cards/${cardId}/transactions`, { params });
+  }
+
+  public getCardUsageSummary<T = any>(cardId: string, period: string = 'month'): Promise<T> {
+    return this.get<T>(`/cards/${cardId}/summary`, { params: { period } });
+  }
+
+  public getCardDetails<T = any>(cardId: string): Promise<T> {
+    return this.get<T>(`/cards/${cardId}`);
+  }
+
+  public updateCard<T = any>(cardId: string, data: any): Promise<T> {
+    return this.put<T>(`/cards/${cardId}`, data);
+  }
+
+  public activateCard<T = any>(cardId: string): Promise<T> {
+    return this.post<T>(`/cards/${cardId}/activate`);
+  }
+
+  public blockCard<T = any>(cardId: string, reason: string): Promise<T> {
+    return this.post<T>(`/cards/${cardId}/block`, { reason });
+  }
+
+  public reportCardLost<T = any>(cardId: string): Promise<T> {
+    return this.post<T>(`/cards/${cardId}/report-lost`);
+  }
+
+  public reportCardStolen<T = any>(cardId: string): Promise<T> {
+    return this.post<T>(`/cards/${cardId}/report-stolen`);
+  }
+
+  public updateCardLimits<T = any>(cardId: string, limits: any): Promise<T> {
+    return this.put<T>(`/cards/${cardId}/limits`, limits);
+  }
+
+  public getVirtualCardDetails<T = any>(cardId: string): Promise<T> {
+    return this.get<T>(`/cards/virtual/${cardId}`);
+  }
+
+  public generateVirtualCard<T = any>(accountId: bigint): Promise<T> {
+    return this.post<T>(`/accounts/${accountId}/virtual-card`);
+  }
 }
 
 export const apiClient = ApiClient.getInstance();

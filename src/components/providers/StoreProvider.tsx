@@ -1,4 +1,3 @@
-// components/providers/StoreProvider.tsx
 'use client';
 
 import { ReactNode, useEffect } from 'react';
@@ -11,7 +10,7 @@ import { useTransactionStore } from '../../stores/transaction.store';
 import { useTransferStore } from '../../stores/transfer.store';
 import { useUserStore } from '../../stores/user.store';
 import { useVoiceStore } from '../../stores/voice.store';
-import { useManualDepositStore } from '../../stores/manual-deposit.store'; // Add this import
+import { useDepositStore } from '../../stores/deposit.store'; // Corrected import
 
 interface StoreProviderProps {
   children: ReactNode;
@@ -20,14 +19,14 @@ interface StoreProviderProps {
 export default function StoreProvider({ children }: StoreProviderProps) {
   const { isAuthenticated, getProfile } = useAuthStore();
   const { getAccounts } = useAccountStore();
-  const { getCards } = useCardStore();
-  const { getLoanSummary } = useLoanStore();
-  const { getReceiptStatistics } = useReceiptStore();
+  const { fetchUserCards } = useCardStore(); // Renamed
+  const { fetchUserLoans } = useLoanStore(); // Renamed
+  const { getReceipts } = useReceiptStore(); // Renamed
   const { getRecentTransactions } = useTransactionStore();
-  const { getTransfers, getTransferLimits } = useTransferStore();
+  const { fetchUserTransfers, fetchTransferLimits } = useTransferStore(); // Renamed
   const { getProfile: getUserProfile, getDashboard } = useUserStore();
-  const { getSupportedLanguages, getSupportedVoiceTypes } = useVoiceStore();
-  const { getDeposits } = useManualDepositStore(); // Add this
+  const { getBalanceRequests } = useVoiceStore(); // Renamed
+  const { fetchUserDeposits } = useDepositStore(); // Renamed
 
   // Initialize stores on mount
   useEffect(() => {
@@ -37,17 +36,16 @@ export default function StoreProvider({ children }: StoreProviderProps) {
           await getProfile();
           await Promise.all([
             getAccounts(),
-            getCards(),
-            getLoanSummary(),
-            getReceiptStatistics(),
+            fetchUserCards(),
+            fetchUserLoans(),
+            getReceipts(),
             getRecentTransactions(),
-            getTransfers(),
-            getTransferLimits(),
+            fetchUserTransfers(),
+            fetchTransferLimits(),
             getUserProfile(),
             getDashboard(),
-            getSupportedLanguages(),
-            getSupportedVoiceTypes(),
-            getDeposits(), // Add manual deposits initialization
+            getBalanceRequests(),
+            fetchUserDeposits(),
           ]);
         } catch (error) {
           console.error('Failed to initialize stores:', error);
@@ -60,17 +58,16 @@ export default function StoreProvider({ children }: StoreProviderProps) {
     isAuthenticated, 
     getProfile, 
     getAccounts, 
-    getCards, 
-    getLoanSummary, 
-    getReceiptStatistics,
+    fetchUserCards, 
+    fetchUserLoans, 
+    getReceipts,
     getRecentTransactions,
-    getTransfers,
-    getTransferLimits,
+    fetchUserTransfers,
+    fetchTransferLimits,
     getUserProfile,
     getDashboard,
-    getSupportedLanguages,
-    getSupportedVoiceTypes,
-    getDeposits, // Add this dependency
+    getBalanceRequests,
+    fetchUserDeposits,
   ]);
 
   return <>{children}</>;

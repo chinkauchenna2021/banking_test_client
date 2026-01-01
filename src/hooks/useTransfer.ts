@@ -1,33 +1,33 @@
 import { useEffect, useCallback } from 'react';
 import { 
   useTransferStore, 
-  Transfer, 
+  UserTransfer, 
   CreateTransferDto, 
   TransferQueryParams 
 } from '../stores/transfer.store';
 
 export const useTransfer = () => {
   const {
-    transfers,
-    currentTransfer,
+    userTransfers: transfers, // Renamed for clarity in the hook
+    // currentTransfer, // Removed
     scheduledTransfers,
     transferFees,
     transferLimits,
     isLoading,
     error,
     initiateTransfer,
-    getTransfers,
+    fetchUserTransfers: getTransfers, // Renamed for clarity in the hook
     getTransferDetails,
     cancelTransfer,
     scheduleTransfer,
-    getScheduledTransfers,
+    fetchScheduledTransfers: getScheduledTransfers, // Renamed
     cancelScheduledTransfer,
     calculateFees,
     validateAccount,
-    getTransferLimits,
-    setCurrentTransfer,
+    fetchTransferLimits: getTransferLimits, // Renamed
+    // setCurrentTransfer, // Not directly exposed by the store
     clearError,
-    setLoading,
+    // setLoading, // Not directly exposed by the store
   } = useTransferStore();
 
   // Auto-fetch transfers on mount
@@ -38,7 +38,7 @@ export const useTransfer = () => {
       }
     };
     fetchTransfers();
-  }, []);
+  }, [transfers.length, isLoading, getTransfers]);
 
   // Auto-fetch transfer limits
   useEffect(() => {
@@ -48,34 +48,34 @@ export const useTransfer = () => {
       }
     };
     fetchLimits();
-  }, []);
+  }, [transferLimits, isLoading, getTransferLimits]);
 
   // Filter sent transfers
-  const getSentTransfers = useCallback((): Transfer[] => {
+  const getSentTransfers = useCallback((): UserTransfer[] => {
     return transfers.filter(transfer => 
-      transfer.status !== 'cancelled' && transfer.scheduled_for === undefined
+      transfer.status !== 'cancelled' && transfer.scheduled_for === null // Use null for optional Date
     );
   }, [transfers]);
 
   // Filter received transfers
-  const getReceivedTransfers = useCallback((): Transfer[] => {
+  const getReceivedTransfers = useCallback((): UserTransfer[] => {
     return transfers.filter(transfer => 
-      transfer.status !== 'cancelled' && transfer.scheduled_for === undefined
+      transfer.status !== 'cancelled' && transfer.scheduled_for === null
     );
   }, [transfers]);
 
   // Filter pending transfers
-  const getPendingTransfers = useCallback((): Transfer[] => {
+  const getPendingTransfers = useCallback((): UserTransfer[] => {
     return transfers.filter(transfer => transfer.status === 'pending');
   }, [transfers]);
 
   // Filter completed transfers
-  const getCompletedTransfers = useCallback((): Transfer[] => {
+  const getCompletedTransfers = useCallback((): UserTransfer[] => {
     return transfers.filter(transfer => transfer.status === 'completed');
   }, [transfers]);
 
   // Filter scheduled transfers by date
-  const getScheduledTransfersByDate = useCallback((date: Date): Transfer[] => {
+  const getScheduledTransfersByDate = useCallback((date: Date): UserTransfer[] => {
     return scheduledTransfers.filter(transfer => {
       if (!transfer.scheduled_for) return false;
       const scheduledDate = new Date(transfer.scheduled_for);
@@ -84,7 +84,7 @@ export const useTransfer = () => {
   }, [scheduledTransfers]);
 
   // Get upcoming scheduled transfers
-  const getUpcomingScheduledTransfers = useCallback((): Transfer[] => {
+  const getUpcomingScheduledTransfers = useCallback((): UserTransfer[] => {
     const now = new Date();
     return scheduledTransfers.filter(transfer => {
       if (!transfer.scheduled_for) return false;
@@ -96,7 +96,7 @@ export const useTransfer = () => {
   const getTotalTransferredAmount = useCallback((): number => {
     return transfers.reduce((total, transfer) => {
       if (transfer.status === 'completed') {
-        return total + parseFloat(transfer.amount);
+        return total + transfer.amount; // amount is already number
       }
       return total;
     }, 0);
@@ -106,7 +106,7 @@ export const useTransfer = () => {
   const getTotalFeesPaid = useCallback((): number => {
     return transfers.reduce((total, transfer) => {
       if (transfer.status === 'completed') {
-        return total + parseFloat(transfer.fee || '0');
+        return total + transfer.fee; // fee is already number
       }
       return total;
     }, 0);
@@ -135,8 +135,7 @@ export const useTransfer = () => {
   }, []);
 
   // Format date display
-  const formatTransferDate = useCallback((dateString: string): string => {
-    const date = new Date(dateString);
+  const formatTransferDate = useCallback((date: Date): string => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -148,7 +147,7 @@ export const useTransfer = () => {
 
   // Quick transfer with validation
   const quickTransfer = useCallback(async (
-    senderAccountId: string,
+    senderAccountId: bigint,
     receiverAccountNumber: string,
     amount: number,
     description?: string,
@@ -167,7 +166,7 @@ export const useTransfer = () => {
 
   // Schedule transfer with validation
   const quickScheduleTransfer = useCallback(async (
-    senderAccountId: string,
+    senderAccountId: bigint,
     receiverAccountNumber: string,
     amount: number,
     scheduledFor: Date,
@@ -198,7 +197,7 @@ export const useTransfer = () => {
   return {
     // State
     transfers,
-    currentTransfer,
+    // currentTransfer,
     scheduledTransfers,
     transferFees,
     transferLimits,
@@ -216,9 +215,9 @@ export const useTransfer = () => {
     calculateFees,
     validateAccount,
     getTransferLimits,
-    setCurrentTransfer,
+    // setCurrentTransfer,
     clearError,
-    setLoading,
+    // setLoading,
 
     // Utility functions
     getSentTransfers,
@@ -253,19 +252,19 @@ export const useTransfer = () => {
 // Hook for individual transfer management
 export const useSingleTransfer = (transferId?: string) => {
   const {
-    transfers,
-    currentTransfer,
+    userTransfers: transfers, // Renamed
+    // currentTransfer, // Removed
     isLoading,
     error,
     getTransferDetails,
     cancelTransfer,
-    setCurrentTransfer,
+    // setCurrentTransfer, // Removed
     clearError,
   } = useTransferStore();
 
   const transfer = transferId 
     ? transfers.find(t => t.id === transferId)
-    : currentTransfer;
+    : undefined; // currentTransfer is removed
 
   // Load transfer details if not already loaded
   useEffect(() => {
@@ -292,7 +291,7 @@ export const useSingleTransfer = (transferId?: string) => {
       ? getTransferDetails(transferId) 
       : Promise.resolve(transfer),
     cancelTransfer: cancelCurrentTransfer,
-    setCurrentTransfer,
+    // setCurrentTransfer,
     clearError,
 
     // Computed properties

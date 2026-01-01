@@ -22,10 +22,47 @@ export interface ClientCard {
   expiry_date: Date;
   created_at: Date;
   updated_at: Date;
+  limits?: {
+    daily_limit?: number;
+    transaction_limit?: number;
+    monthly_limit?: number;
+  };
   // Add other properties as needed by the client
 }
 
 export type UserCard = ClientCard;
+
+// Client-side definition for CardTransaction
+export interface CardTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  status: string;
+  description: string;
+  created_at: Date;
+  metadata: any; // Adjust as needed
+}
+
+// Client-side definition for CardUsageSummary
+export interface CardUsageSummary {
+  period: {
+    start: Date;
+    end: Date;
+  };
+  summary: {
+    total_spent: number;
+    transaction_count: number;
+    average_transaction: number;
+    remaining_limit: number;
+  };
+  categories: {
+    online: number;
+    retail: number;
+    travel: number;
+    other: number;
+  };
+  recent_transactions: CardTransaction[];
+}
 
 // Client-side definition of CardType enum
 export enum CardType {
@@ -49,10 +86,23 @@ interface CardState {
   isLoading: boolean;
   error: string | null;
   pagination: any | null;
+  cardTransactions: CardTransaction[]; // Added
+  usageSummary: CardUsageSummary | null; // Added
 
   // User actions
   requestCard: (data: { account_id: bigint; type: CardType; card_type: CardCardType; is_virtual: boolean }) => Promise<UserCard>;
   fetchUserCards: (params?: any) => Promise<void>;
+  fetchCardTransactions: (cardId: string, params?: any) => Promise<void>; // Added
+  fetchCardUsageSummary: (cardId: string, period?: string) => Promise<void>; // Added
+  getCardDetails: (cardId: string) => Promise<UserCard>; // Added
+  updateCard: (cardId: string, data: any) => Promise<UserCard>; // Added
+  activateCard: (cardId: string) => Promise<UserCard>; // Added
+  blockCard: (cardId: string, reason: string) => Promise<UserCard>; // Added
+  reportCardLost: (cardId: string) => Promise<UserCard>; // Added
+  reportCardStolen: (cardId: string) => Promise<UserCard>; // Added
+  updateCardLimits: (cardId: string, limits: any) => Promise<UserCard>; // Added
+  getVirtualCardDetails: (cardId: string) => Promise<UserCard>; // Added
+  generateVirtualCard: (accountId: bigint) => Promise<UserCard>; // Added
 
   // Admin actions
   fetchPendingCardRequests: (params?: any) => Promise<void>;
@@ -68,6 +118,8 @@ export const useCardStore = create<CardState>((set, get) => ({
   isLoading: false,
   error: null,
   pagination: null,
+  cardTransactions: [], // Initial state
+  usageSummary: null, // Initial state
 
   clearError: () => set({ error: null }),
 
@@ -99,6 +151,166 @@ export const useCardStore = create<CardState>((set, get) => ({
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
       set({ error: errorMessage, isLoading: false });
+    }
+  },
+
+  fetchCardTransactions: async (cardId, params) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.getCardTransactions<{ data: CardTransaction[], pagination: any }>(cardId, params);
+      set({ cardTransactions: response.data, isLoading: false });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+    }
+  },
+
+  fetchCardUsageSummary: async (cardId, period) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.getCardUsageSummary<{ data: CardUsageSummary }>(cardId, period);
+      set({ usageSummary: response.data, isLoading: false });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+    }
+  },
+
+  getCardDetails: async (cardId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.getCardDetails<{ data: UserCard }>(cardId);
+      set({ isLoading: false });
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  updateCard: async (cardId, data) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.updateCard<{ data: UserCard }>(cardId, data);
+      set((state) => ({
+        userCards: state.userCards.map((c) => (c.id === cardId ? response.data : c)),
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  activateCard: async (cardId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.activateCard<{ data: UserCard }>(cardId);
+      set((state) => ({
+        userCards: state.userCards.map((c) => (c.id === cardId ? response.data : c)),
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  blockCard: async (cardId, reason) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.blockCard<{ data: UserCard }>(cardId, reason);
+      set((state) => ({
+        userCards: state.userCards.map((c) => (c.id === cardId ? response.data : c)),
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  reportCardLost: async (cardId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.reportCardLost<{ data: UserCard }>(cardId);
+      set((state) => ({
+        userCards: state.userCards.map((c) => (c.id === cardId ? response.data : c)),
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  reportCardStolen: async (cardId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.reportCardStolen<{ data: UserCard }>(cardId);
+      set((state) => ({
+        userCards: state.userCards.map((c) => (c.id === cardId ? response.data : c)),
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  updateCardLimits: async (cardId, limits) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.updateCardLimits<{ data: UserCard }>(cardId, limits);
+      set((state) => ({
+        userCards: state.userCards.map((c) => (c.id === cardId ? response.data : c)),
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  getVirtualCardDetails: async (cardId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.getVirtualCardDetails<{ data: UserCard }>(cardId);
+      set({ isLoading: false });
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  generateVirtualCard: async (accountId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.generateVirtualCard<{ data: UserCard }>(accountId);
+      set((state) => ({
+        userCards: [response.data, ...state.userCards],
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
     }
   },
 
@@ -146,4 +358,5 @@ export const useCardStore = create<CardState>((set, get) => ({
       throw new Error(errorMessage);
     }
   },
+  clearError: () => set({ error: null }),
 }));

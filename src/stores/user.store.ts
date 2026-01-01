@@ -1,6 +1,20 @@
 import { create } from 'zustand';
 import { apiClient } from '../lib/api-client';
 
+export interface Account {
+  id: bigint;
+  user_id: bigint;
+  account_number: string;
+  account_name: string;
+  account_type: string;
+  currency: string;
+  balance: number;
+  available_balance: number;
+  ledger_balance: number;
+  status: string;
+  // Add other properties as needed by the client
+}
+
 export interface User {
   id: string;
   account_number: string;
@@ -32,6 +46,7 @@ export interface User {
   preferences?: Record<string, any>;
   created_at: string;
   updated_at: string;
+  accounts?: Account[]; // Added accounts property
 }
 
 export interface UpdateUserDto {

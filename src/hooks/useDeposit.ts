@@ -33,36 +33,36 @@ export const useDeposit = () => {
 
   // Get deposit by ID
   const getDepositById = useCallback((depositId: string): ManualDeposit | undefined => {
-    return deposits.find(deposit => deposit.id === depositId);
+    return deposits.find((deposit: ManualDeposit) => deposit.id === depositId);
   }, [deposits]);
 
   // Get deposits by status
   const getDepositsByStatus = useCallback((status: string): ManualDeposit[] => {
-    return deposits.filter(deposit => deposit.status === status);
+    return deposits.filter((deposit: ManualDeposit) => deposit.status === status);
   }, [deposits]);
 
   // Get deposits by method
   const getDepositsByMethod = useCallback((method: string): ManualDeposit[] => {
-    return deposits.filter(deposit => deposit.method === method);
+    return deposits.filter((deposit: ManualDeposit) => deposit.method === method);
   }, [deposits]);
 
   // Get total deposited amount
   const getTotalDeposited = useCallback(() => {
     return deposits
-      .filter(deposit => deposit.status === 'completed')
-      .reduce((total, deposit) => total + parseFloat(deposit.amount), 0);
+      .filter((deposit: ManualDeposit) => deposit.status === 'completed')
+      .reduce((total: number, deposit: ManualDeposit) => total + deposit.amount, 0);
   }, [deposits]);
 
   // Get pending deposits
-  const getPendingDeposits = useCallback((): Deposit[] => {
-    return deposits.filter(deposit => 
+  const getPendingDeposits = useCallback((): ManualDeposit[] => {
+    return deposits.filter((deposit: ManualDeposit) => 
       deposit.status === 'pending' || deposit.status === 'awaiting_confirmation'
     );
   }, [deposits]);
 
   // Get deposit method by type
   const getDepositMethodByType = useCallback((methodType: string): DepositMethodItem | undefined => {
-    return depositMethods.find(method => method.method === methodType);
+    return depositMethods.find((method: DepositMethodItem) => method.method === methodType);
   }, [depositMethods]);
 
   // Calculate deposit fees

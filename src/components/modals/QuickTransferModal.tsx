@@ -81,7 +81,7 @@ export default function QuickTransferModal({
     
     try {
       await quickTransfer(
-        transferData.fromAccount,
+        BigInt(transferData.fromAccount),
         transferData.toAccount,
         parseFloat(transferData.amount),
         transferData.description,

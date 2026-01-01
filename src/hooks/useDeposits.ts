@@ -1,4 +1,4 @@
-import { useDepositStore } from '../stores/deposit.store';
+import { useDepositStore, ManualDeposit } from '../stores/deposit.store';
 import { useUser } from './useUser'; // To get the current user's account
 
 export const useDeposits = () => {
@@ -9,7 +9,7 @@ export const useDeposits = () => {
   // For example, filtering deposits by status or method.
 
   const findDepositById = (depositId: string) => {
-    return depositState.userDeposits.find(d => d.id === depositId);
+    return depositState.userDeposits.find((d: ManualDeposit) => d.id === depositId);
   };
 
   return {

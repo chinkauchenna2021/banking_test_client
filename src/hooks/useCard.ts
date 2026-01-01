@@ -1,17 +1,17 @@
 import { useEffect, useCallback } from 'react';
-import { useCardStore, Card, CardTransaction, CardUsageSummary } from '../stores/card.store';
+import { useCardStore, UserCard, CardTransaction, CardUsageSummary } from '../stores/card.store';
 
 export const useCard = () => {
   const {
-    cards,
-    currentCard,
-    virtualCard,
+    userCards: cards, // Renamed for clarity in the hook
+    // currentCard, // Removed
+    // virtualCard, // Removed
     cardTransactions,
     usageSummary,
     isLoading,
     error,
     requestCard,
-    getCards,
+    fetchUserCards: getCards, // Renamed for clarity in the hook
     getCardDetails,
     updateCard,
     activateCard,
@@ -19,13 +19,13 @@ export const useCard = () => {
     reportCardLost,
     reportCardStolen,
     updateCardLimits,
-    getCardTransactions,
-    getCardUsageSummary,
+    fetchCardTransactions: getCardTransactions, // Renamed
+    fetchCardUsageSummary: getCardUsageSummary, // Renamed
     getVirtualCardDetails,
     generateVirtualCard,
-    setCurrentCard,
+    // setCurrentCard, // Not directly exposed by the store
     clearError,
-    setLoading,
+    // setLoading, // Not directly exposed by the store
   } = useCardStore();
 
   // Auto-fetch cards on mount
@@ -36,35 +36,35 @@ export const useCard = () => {
       }
     };
     fetchCards();
-  }, []);
+  }, [cards.length, isLoading, getCards]);
 
   // Get card by ID
-  const getCardById = useCallback((cardId: string): Card | undefined => {
+  const getCardById = useCallback((cardId: string): UserCard | undefined => {
     return cards.find(card => card.id === cardId);
   }, [cards]);
 
   // Get active cards
-  const getActiveCards = useCallback((): Card[] => {
+  const getActiveCards = useCallback((): UserCard[] => {
     return cards.filter(card => card.status === 'active');
   }, [cards]);
 
   // Get blocked cards
-  const getBlockedCards = useCallback((): Card[] => {
+  const getBlockedCards = useCallback((): UserCard[] => {
     return cards.filter(card => card.status === 'blocked');
   }, [cards]);
 
   // Get virtual cards
-  const getVirtualCards = useCallback((): Card[] => {
+  const getVirtualCards = useCallback((): UserCard[] => {
     return cards.filter(card => card.is_virtual);
   }, [cards]);
 
   // Get physical cards
-  const getPhysicalCards = useCallback((): Card[] => {
+  const getPhysicalCards = useCallback((): UserCard[] => {
     return cards.filter(card => !card.is_virtual);
   }, [cards]);
 
   // Get default card
-  const getDefaultCard = useCallback((): Card | undefined => {
+  const getDefaultCard = useCallback((): UserCard | undefined => {
     return cards.find(card => card.is_default);
   }, [cards]);
 
@@ -76,7 +76,7 @@ export const useCard = () => {
   // Get total spent
   const getTotalSpent = useCallback((): number => {
     return cardTransactions.reduce((total, transaction) => {
-      return total + parseFloat(transaction.amount);
+      return total + transaction.amount; // amount is already number
     }, 0);
   }, [cardTransactions]);
 
@@ -99,13 +99,13 @@ export const useCard = () => {
   }, []);
 
   // Check if card is expired
-  const isCardExpired = useCallback((card: Card): boolean => {
+  const isCardExpired = useCallback((card: UserCard): boolean => {
     const expiryDate = new Date(card.expiry_date);
     return expiryDate < new Date();
   }, []);
 
   // Get remaining limit
-  const getRemainingLimit = useCallback((card: Card): number => {
+  const getRemainingLimit = useCallback((card: UserCard): number => {
     if (!card.limits?.daily_limit) return 0;
     return card.limits.daily_limit - (usageSummary?.summary.total_spent || 0);
   }, [usageSummary]);
@@ -124,8 +124,8 @@ export const useCard = () => {
   return {
     // State
     cards,
-    currentCard,
-    virtualCard,
+    // currentCard, // Removed
+    // virtualCard, // Removed
     cardTransactions,
     usageSummary,
     isLoading,
@@ -145,9 +145,9 @@ export const useCard = () => {
     getCardUsageSummary,
     getVirtualCardDetails,
     generateVirtualCard,
-    setCurrentCard,
+    // setCurrentCard,
     clearError,
-    setLoading,
+    // setLoading,
 
     // Utility functions
     getCardById,

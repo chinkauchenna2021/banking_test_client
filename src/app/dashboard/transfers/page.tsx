@@ -124,7 +124,7 @@ export default function TransfersPage() {
     
     try {
       await quickTransfer(
-        transferData.fromAccount,
+        BigInt(transferData.fromAccount),
         transferData.toAccount,
         parseFloat(transferData.amount),
         transferData.description,
@@ -155,7 +155,7 @@ export default function TransfersPage() {
     
     try {
       await quickScheduleTransfer(
-        scheduleData.fromAccount,
+        BigInt(scheduleData.fromAccount),
         scheduleData.toAccount,
         parseFloat(scheduleData.amount),
         scheduleData.scheduledFor,
