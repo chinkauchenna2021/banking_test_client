@@ -6,11 +6,11 @@ import { useAuth } from '@/hooks';
 import { Loader2 } from 'lucide-react';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Banking Dashboard',
+  title: 'Fidelity Offshore Bank - Dashboard',
   description: 'Modern banking dashboard with advanced features'
 };
 
@@ -22,8 +22,7 @@ export default async function DashboardLayout({
 
 
    const { user, isAuthenticated, isLoading } = useAuth()
-  const router = useRouter()
-  
+
     const cookieStore = await cookies();
     const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
     
@@ -31,13 +30,13 @@ export default async function DashboardLayout({
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        router.push('/auth/login')
+        redirect('/auth/login')
       } else if (user?.is_admin) {
         // Redirect admin users to admin dashboard
-        router.push('/admin')
+        redirect('/admin')
       }
     }
-  }, [user, isAuthenticated, isLoading, router])
+  }, [user, isAuthenticated, isLoading, redirect]);
 
   if (isLoading) {
     return (

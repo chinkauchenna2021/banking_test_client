@@ -1,3 +1,4 @@
+"use client"
 import { useEffect, useCallback } from 'react';
 import { useContactStore, ContactMessage, ContactCategory, FAQ, SupportHours, ResponseTime } from '../stores/contact.store';
 

@@ -168,6 +168,33 @@ class ApiClient {
     return this.get<T>('/transfers', { params });
   }
 
+  // NEW METHODS ADDED HERE
+  public getScheduledTransfers<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/transfers/scheduled', { params });
+  }
+
+  public cancelTransfer<T = any>(transferId: string, reason: string): Promise<T> {
+    return this.post<T>(`/transfers/${transferId}/cancel`, { reason });
+  }
+
+  public scheduleTransfer<T = any>(data: any): Promise<T> {
+    return this.post<T>('/transfer/schedule', data);
+  }
+
+  public cancelScheduledTransfer<T = any>(transferId: string): Promise<T> {
+    return this.post<T>(`/transfers/scheduled/${transferId}/cancel`);
+  }
+
+  public getTransferFees<T = any>(amount: number, currency: string, type: string): Promise<T> {
+    return this.get<T>('/transfer/fees', {
+      params: { amount, currency, type }
+    });
+  }
+
+  public getTransferDetails<T = any>(transferId: string): Promise<T> {
+    return this.get<T>(`/transfers/${transferId}`);
+  }
+
   // =================================================================
   // Loans
   // =================================================================

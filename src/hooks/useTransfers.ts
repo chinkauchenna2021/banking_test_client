@@ -1,3 +1,4 @@
+"use client"
 import { useEffect } from 'react';
 import { useTransferStore } from '../stores/transfer.store';
 import { useUser } from './useUser';

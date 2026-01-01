@@ -1,4 +1,4 @@
-// lib/hooks/useReceipt.ts
+"use client"
 import { useEffect, useCallback } from 'react';
 import { useReceiptStore, Receipt, ReceiptStatistics } from '../stores/receipt.store';
 

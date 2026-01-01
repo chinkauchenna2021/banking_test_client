@@ -1,3 +1,4 @@
+"use client"
 import { useEffect, useCallback } from 'react';
 import { useAccountStore, Account, Transaction } from '../stores/account.store';
 

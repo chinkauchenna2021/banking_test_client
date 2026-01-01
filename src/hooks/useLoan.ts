@@ -1,3 +1,4 @@
+"use client"
 import { useEffect, useCallback } from 'react';
 import { useLoanStore, UserLoan, LoanRepayment, LoanEligibility, LoanCalculator, LoanDocument, LoanType } from '../stores/loan.store';
 

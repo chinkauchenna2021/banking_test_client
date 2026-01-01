@@ -34,6 +34,7 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isScaled = activeThemeValue?.endsWith('-scaled');
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
     <html lang='en' suppressHydrationWarning>

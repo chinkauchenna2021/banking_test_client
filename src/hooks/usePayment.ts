@@ -1,3 +1,4 @@
+"use client"
 import { useEffect, useCallback } from 'react';
 import { usePaymentStore, PaymentMethod, Payment, PaymentFees } from '../stores/payment.store';
 

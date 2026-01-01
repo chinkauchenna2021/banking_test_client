@@ -1,4 +1,4 @@
-// lib/hooks/useAdmin.ts
+"use client"
 import { useEffect, useCallback } from 'react';
 import { useAdminStore, AdminUser, AdminTransaction, AdminDeposit, ApprovalQueueItem } from '../stores/admin.store';
 
