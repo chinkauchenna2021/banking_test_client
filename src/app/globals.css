@@ -2,7 +2,7 @@
 
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant white (&:is(.white *));
 
 @import './theme.css';
 
@@ -142,20 +142,6 @@
   /* Ensure the incoming view (new theme) is always on top */
   z-index: 1;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* Hero Section */
 .finflow-hero .main-slider-content__inner {
@@ -554,17 +540,13 @@
   height: 22px;
 }
 
-
-
-
 /* Add to your global CSS or component styles */
 .big-title {
   font-size: clamp(2.5rem, 6vw, 6rem) !important;
   font-weight: 800 !important;
   line-height: 1.1 !important;
   letter-spacing: -0.02em !important;
-  color:#ffffff !important;
-
+  color: #ffffff !important;
 }
 
 .text {
@@ -577,14 +559,14 @@
 @media (max-width: 640px) {
   .big-title br {
     display: block;
-    content: " ";
+    content: ' ';
     margin-bottom: 0.5rem;
   }
-  
+
   .btns-box {
     margin-top: 2rem !important;
   }
-  
+
   .btn-one {
     padding: 0.875rem 0.2rem !important;
     font-size: 1rem !important;
@@ -596,7 +578,7 @@
   .big-title {
     font-size: 5rem !important;
   }
-  
+
   .text {
     font-size: 1.25rem !important;
     margin-top: 2rem !important;
@@ -608,46 +590,19 @@
   .finflow-hero .big-title h2 {
     font-size: 36px;
   }
-  
+
   .finflow-section-header .section-title {
     font-size: 32px;
   }
-  
+
   .finflow-features-tabs .features-tabs-nav {
     flex-direction: column;
   }
-  
+
   .ui-link-helper {
     display: none;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @keyframes reveal {
   from {

@@ -18,8 +18,8 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'Fidelity Offshore',
+  description: 'Best for offshore banking services'
 };
 
 export const viewport: Viewport = {
@@ -34,28 +34,29 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isScaled = activeThemeValue?.endsWith('-scaled');
-  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
-        {/* <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.light}')
-                }
-              } catch (_) {}
-            `
-          }}
-        /> */}
-    </head>
+        <script
+        // dangerouslySetInnerHTML={{
+        //   __html: `
+        //     try {
+        //       if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        //         document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.light}')
+        //       }
+        //     } catch (_) {}
+        //   `
+        // }}
+        />
+      </head>
       <body
         className={cn(
-          'bg-background   font-sans antialiased',
-          activeThemeValue ? `theme-${activeThemeValue}` : '',
-          isScaled ? 'theme-scaled' : '',
+          'bg-white text-black dark:bg-black dark:text-white',
+          isScaled ? 'sm:scale-105' : 'sm:scale-100',
+          'overflow-x-hidden',
+          'scrollbar-hide',
+          'font-sans antialiased',
           fontVariables
         )}
       >
@@ -71,10 +72,10 @@ export default async function RootLayout({
             <Providers activeThemeValue={activeThemeValue as string}>
               <Toaster />
               <AuthProvider>
-              <StoreProvider>
-                 {children}
-                 <Toaster />
-              </StoreProvider>
+                <StoreProvider>
+                  {children}
+                  <Toaster />
+                </StoreProvider>
               </AuthProvider>
             </Providers>
           </ThemeProvider>
@@ -83,4 +84,3 @@ export default async function RootLayout({
     </html>
   );
 }
-

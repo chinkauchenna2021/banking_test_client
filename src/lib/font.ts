@@ -9,41 +9,49 @@ import {
 
 import { cn } from '@/lib/utils';
 
-const fontSans = Geist({
+const geistSans = Geist({
   subsets: ['latin'],
-  variable: '--font-sans'
+  variable: '--font-geist-sans'
+  // No weight needed for variable fonts
 });
 
-const fontMono = Geist_Mono({
+// Configure Geist Mono (typically a variable font)
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  variable: '--font-mono'
+  variable: '--font-geist-mono'
 });
 
-const fontInstrument = Instrument_Sans({
+// Configure Instrument Sans (check if it's variable on fonts.google.com)
+const instrumentSans = Instrument_Sans({
   subsets: ['latin'],
-  variable: '--font-instrument'
+  variable: '--font-instrument-sans',
+  weight: ['400', '500', '600', '700'] // Specify weights if not variable
 });
 
-const fontNotoMono = Noto_Sans_Mono({
-  subsets: ['latin'],
-  variable: '--font-noto-mono'
-});
-
-const fontMullish = Mulish({
-  subsets: ['latin'],
-  variable: '--font-mullish'
-});
-
-const fontInter = Inter({
+// Configure Inter (a popular variable font)
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter'
 });
 
+// Configure Mulish (check if variable)
+const mulish = Mulish({
+  subsets: ['latin'],
+  variable: '--font-mulish',
+  weight: ['400', '700'] // Specify if needed
+});
+
+// Configure Noto Sans Mono (a monospace font)
+const notoSansMono = Noto_Sans_Mono({
+  subsets: ['latin'],
+  variable: '--font-noto-sans-mono',
+  weight: ['400', '700'] // Specify if needed
+});
 export const fontVariables = cn(
-  fontSans.variable,
-  fontMono.variable,
-  fontInstrument.variable,
-  fontNotoMono.variable,
-  fontMullish.variable,
-  fontInter.variable
+  geistSans.variable,
+  geistMono.variable,
+  instrumentSans.variable,
+  inter.variable,
+  mulish.variable,
+  notoSansMono.variable
 );
