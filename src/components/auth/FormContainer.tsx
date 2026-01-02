@@ -34,7 +34,7 @@ export function FormContainer({
   icon
 }: FormContainerProps) {
   return (
-    <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-white p-4'>
+    <div className='flex min-h-screen items-center justify-center bg-linear-to-br from-gray-50 to-white p-4'>
       <div className='w-full max-w-md'>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -45,11 +45,11 @@ export function FormContainer({
           {/* Header */}
           <div className='text-center'>
             {icon && (
-              <div className='mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg'>
+              <div className='mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-purple-600 shadow-lg'>
                 {icon}
               </div>
             )}
-            <h1 className='bg-gradient-to-r from-gray-500 to-gray-700 bg-clip-text text-3xl font-bold text-transparent'>
+            <h1 className='bg-linear-to-r from-gray-500 to-gray-700 bg-clip-text text-3xl font-bold text-transparent'>
               {title}
             </h1>
             <p className='mx-auto mt-3 max-w-sm text-sm text-gray-600'>
