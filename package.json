@@ -6,6 +6,7 @@
     "name": "Kiran",
     "url": "https://github.com/Kiranism"
   },
+  "packageManager": "pnpm@10.14.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
