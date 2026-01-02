@@ -35,10 +35,19 @@ export default function Footer() {
                 <div className='our-company-info'>
                   <div className='footer-logo-style1'>
                     <Link href='/'>
-                      <Image
-                        src='/assets/images/resources/fidelity_logo.png'
-                        alt='Fidelitybank Logo'
-                      />
+                      <div className='flex w-full flex-row items-center justify-start space-x-4'>
+                        <img
+                          className='h-6 w-14 md:h-10 md:w-32'
+                          // src='/assets/images/resources/logo-3.png'
+                          src='/assets/images/shapes/card-banner-area-bg.png'
+                          alt='Fidelitybank Logo'
+                        />
+                        <div className='h-fit w-fit'>
+                          <h3 className='text-xs! font-bold tracking-wide text-slate-500 md:text-lg!'>
+                            Fidelity Offshore Bank{' '}
+                          </h3>
+                        </div>
+                      </div>
                     </Link>
                   </div>
                   <div className='bottom-text'>
