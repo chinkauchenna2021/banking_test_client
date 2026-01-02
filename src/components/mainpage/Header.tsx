@@ -331,7 +331,7 @@ export default function Header() {
                     <span className='icon-map'></span> 12 Red Rose, LA 90010
                   </li>
                   <li>
-                    <span className='icon-clock'></span> 9am to 5pm, Sun Holiday
+                    {/* <span className='icon-clock'></span> 9am to 5pm, Sun Holiday */}
                   </li>
                 </ul>
               </div>
@@ -384,9 +384,10 @@ export default function Header() {
                 </div>
                 <div className='logo-box-style3'>
                   <Link href='/'>
-                    <img
-                      src='/assets/images/resources/logo-3.png'
-                      alt='Finbank Logo'
+                    <Image
+                      // src='/assets/images/resources/logo-3.png'
+                      src='/assets/images/resources/fidelity_logo.png'
+                      alt='Fidelitybank Logo'
                     />
                   </Link>
                 </div>

@@ -50,16 +50,7 @@ export default async function RootLayout({
         // }}
         />
       </head>
-      <body
-        className={cn(
-          'bg-white text-black dark:bg-black dark:text-white',
-          isScaled ? 'sm:scale-105' : 'sm:scale-100',
-          'overflow-x-hidden',
-          'scrollbar-hide',
-          'font-sans antialiased',
-          fontVariables
-        )}
-      >
+      <body className={`${fontVariables}`}>
         <NextTopLoader color='var(--primary)' showSpinner={false} />
         <NuqsAdapter>
           <ThemeProvider

@@ -125,14 +125,14 @@ export default function Layout({ children }: LayoutProps) {
           href='/assets/css/module-css/08-blog-section.css'
         />
 
-        <link rel='stylesheet' href='/assets/css/responsive.css' />
         <link rel='stylesheet' href='/assets/css/style.css' />
         <link rel='stylesheet' href='/assets/css/color-2.css' />
+        <link rel='stylesheet' href='/assets/css/responsive.css' />
       </div>
       <div>
         <div>
+          <Preloader />
           <div className='page-wrapper'>
-            <Preloader />
             <Header />
             {children}
             <Footer />
