@@ -32,7 +32,10 @@ export interface AuthState {
   verifyEmail: (token: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
-  changePassword: (data: { current_password: string; new_password: string }) => Promise<void>;
+  changePassword: (data: {
+    current_password: string;
+    new_password: string;
+  }) => Promise<void>;
   verifyTwoFactor: (tempToken: string, code: string) => Promise<void>;
   getProfile: () => Promise<void>;
   clearError: () => void;
@@ -64,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
           if (response.requires_two_factor) {
             set({
               isLoading: false,
-              error: null,
+              error: null
             });
             // Return special object for 2FA
             throw { requiresTwoFactor: true, tempToken: response.temp_token };
@@ -76,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: response.refresh_token,
             isAuthenticated: true,
             isLoading: false,
-            error: null,
+            error: null
           });
 
           // Store tokens in localStorage for axios interceptor
@@ -84,12 +87,43 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem('refresh_token', response.refresh_token);
         } catch (error: any) {
           set({
-            error: error.response?.data?.error || error.message || 'Login failed',
-            isLoading: false,
+            error:
+              error.response?.data?.error || error.message || 'Login failed',
+            isLoading: false
           });
           throw error;
         }
       },
+
+      // register: async (userData: any) => {
+      //   set({ isLoading: true, error: null });
+      //   try {
+      //     const response = await apiClient.post<{
+      //       user: User;
+      //       access_token: string;
+      //       refresh_token: string;
+      //       message: string;
+      //     }>('/auth/register', userData);
+
+      //     set({
+      //       user: response.user,
+      //       accessToken: response.access_token,
+      //       refreshToken: response.refresh_token,
+      //       isAuthenticated: true,
+      //       isLoading: false,
+      //       error: null,
+      //     });
+
+      //     localStorage.setItem('access_token', response.access_token);
+      //     localStorage.setItem('refresh_token', response.refresh_token);
+      //   } catch (error: any) {
+      //     set({
+      //       error: error.response?.data?.error || error.message || 'Registration failed',
+      //       isLoading: false,
+      //     });
+      //     throw error;
+      //   }
+      // },
 
       register: async (userData: any) => {
         set({ isLoading: true, error: null });
@@ -107,20 +141,24 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: response.refresh_token,
             isAuthenticated: true,
             isLoading: false,
-            error: null,
+            error: null
           });
 
           localStorage.setItem('access_token', response.access_token);
           localStorage.setItem('refresh_token', response.refresh_token);
         } catch (error: any) {
+          // Pass through the full error response for better handling
           set({
-            error: error.response?.data?.error || error.message || 'Registration failed',
-            isLoading: false,
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              'Registration failed',
+            isLoading: false
           });
+          // Re-throw the error with full response for component-level handling
           throw error;
         }
       },
-
       logout: async () => {
         set({ isLoading: true });
         try {
@@ -134,7 +172,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
             isAuthenticated: false,
             isLoading: false,
-            error: null,
+            error: null
           });
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
@@ -153,7 +191,7 @@ export const useAuthStore = create<AuthState>()(
 
           set({
             accessToken: response.access_token,
-            refreshToken: response.refresh_token,
+            refreshToken: response.refresh_token
           });
 
           localStorage.setItem('access_token', response.access_token);
@@ -170,8 +208,11 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
         } catch (error: any) {
           set({
-            error: error.response?.data?.error || error.message || 'Email verification failed',
-            isLoading: false,
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              'Email verification failed',
+            isLoading: false
           });
           throw error;
         }
@@ -184,8 +225,11 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
         } catch (error: any) {
           set({
-            error: error.response?.data?.error || error.message || 'Failed to send reset email',
-            isLoading: false,
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              'Failed to send reset email',
+            isLoading: false
           });
           throw error;
         }
@@ -194,26 +238,38 @@ export const useAuthStore = create<AuthState>()(
       resetPassword: async (token: string, newPassword: string) => {
         set({ isLoading: true, error: null });
         try {
-          await apiClient.post('/auth/reset-password', { token, new_password: newPassword });
+          await apiClient.post('/auth/reset-password', {
+            token,
+            new_password: newPassword
+          });
           set({ isLoading: false });
         } catch (error: any) {
           set({
-            error: error.response?.data?.error || error.message || 'Password reset failed',
-            isLoading: false,
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              'Password reset failed',
+            isLoading: false
           });
           throw error;
         }
       },
 
-      changePassword: async (data: { current_password: string; new_password: string }) => {
+      changePassword: async (data: {
+        current_password: string;
+        new_password: string;
+      }) => {
         set({ isLoading: true, error: null });
         try {
           await apiClient.post('/auth/change-password', data);
           set({ isLoading: false });
         } catch (error: any) {
           set({
-            error: error.response?.data?.error || error.message || 'Password change failed',
-            isLoading: false,
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              'Password change failed',
+            isLoading: false
           });
           throw error;
         }
@@ -234,15 +290,18 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: response.refresh_token,
             isAuthenticated: true,
             isLoading: false,
-            error: null,
+            error: null
           });
 
           localStorage.setItem('access_token', response.access_token);
           localStorage.setItem('refresh_token', response.refresh_token);
         } catch (error: any) {
           set({
-            error: error.response?.data?.error || error.message || '2FA verification failed',
-            isLoading: false,
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              '2FA verification failed',
+            isLoading: false
           });
           throw error;
         }
@@ -255,19 +314,22 @@ export const useAuthStore = create<AuthState>()(
           set({
             user,
             isLoading: false,
-            error: null,
+            error: null
           });
         } catch (error: any) {
           set({
-            error: error.response?.data?.error || error.message || 'Failed to load profile',
-            isLoading: false,
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              'Failed to load profile',
+            isLoading: false
           });
           throw error;
         }
       },
 
       clearError: () => set({ error: null }),
-      setLoading: (loading: boolean) => set({ isLoading: loading }),
+      setLoading: (loading: boolean) => set({ isLoading: loading })
     }),
     {
       name: 'auth-storage',
@@ -275,8 +337,8 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
-      }),
+        isAuthenticated: state.isAuthenticated
+      })
     }
   )
 );

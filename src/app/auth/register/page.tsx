@@ -12,9 +12,10 @@ import {
   Eye,
   EyeOff,
   Phone,
+  Calendar,
   ArrowRight,
-  UserPlus,
-  Check
+  Check,
+  ChevronLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,13 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { FormContainer } from '@/components/auth/FormContainer';
+import { format } from 'date-fns';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,6 +49,10 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [dateOfBirth, setDateOfBirth] = useState<Date>();
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   const [registrationData, setRegistrationData] = useState({
     firstName: '',
@@ -50,61 +62,144 @@ export default function RegisterPage() {
     accountType: 'personal',
     password: '',
     confirmPassword: '',
+    date_of_birth: '',
     acceptTerms: false,
     acceptPrivacy: false
   });
 
+  // Format date to YYYY-MM-DD
+  const formatDate = (date: Date): string => {
+    return format(date, 'yyyy-MM-dd');
+  };
+
+  // Password strength checker
   const checkPasswordStrength = (password: string) => {
     let strength = 0;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
+    // Length check
     if (password.length >= 8) strength += 25;
     if (password.length >= 12) strength += 10;
 
-    if (/[A-Z]/.test(password)) strength += 15;
-    if (/[a-z]/.test(password)) strength += 15;
-    if (/[0-9]/.test(password)) strength += 15;
-    if (/[^A-Za-z0-9]/.test(password)) strength += 20;
+    // Character type checks
+    if (hasUpperCase) strength += 15;
+    if (hasLowerCase) strength += 15;
+    if (hasNumbers) strength += 15;
+    if (hasSpecialChars) strength += 20;
 
     setPasswordStrength(Math.min(strength, 100));
+    return { hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChars };
   };
 
+  // Validate step
   const validateStep = (stepNumber: number) => {
+    const errors: Record<string, string> = {};
+
     switch (stepNumber) {
       case 1:
-        return (
-          registrationData.firstName.trim() !== '' &&
-          registrationData.lastName.trim() !== '' &&
-          registrationData.email.trim() !== '' &&
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registrationData.email)
-        );
+        if (!registrationData.firstName.trim()) {
+          errors.firstName = 'First name is required';
+        }
+        if (!registrationData.lastName.trim()) {
+          errors.lastName = 'Last name is required';
+        }
+        if (!registrationData.email.trim()) {
+          errors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registrationData.email)) {
+          errors.email = 'Please enter a valid email address';
+        }
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+
       case 2:
-        return true; // Account type selection is optional or has default
+        if (!dateOfBirth) {
+          errors.date_of_birth = 'Date of birth is required';
+        } else {
+          const today = new Date();
+          const birthDate = new Date(dateOfBirth);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birthDate.getDate())
+          ) {
+            age--;
+          }
+
+          if (age < 18) {
+            errors.date_of_birth = 'You must be at least 18 years old';
+          }
+        }
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+
       case 3:
-        const isValid =
-          registrationData.password.length >= 8 &&
-          registrationData.password === registrationData.confirmPassword &&
-          registrationData.acceptTerms &&
-          registrationData.acceptPrivacy &&
-          passwordStrength >= 60;
-        return isValid;
+        const passwordChecks = checkPasswordStrength(registrationData.password);
+
+        if (registrationData.password.length < 8) {
+          errors.password = 'Password must be at least 8 characters';
+        }
+        if (!passwordChecks.hasUpperCase) {
+          errors.password =
+            'Password must contain at least one uppercase letter';
+        }
+        if (!passwordChecks.hasLowerCase) {
+          errors.password =
+            'Password must contain at least one lowercase letter';
+        }
+        if (!passwordChecks.hasNumbers) {
+          errors.password = 'Password must contain at least one number';
+        }
+        if (!passwordChecks.hasSpecialChars) {
+          errors.password =
+            'Password must contain at least one special character';
+        }
+        if (registrationData.password !== registrationData.confirmPassword) {
+          errors.confirmPassword = 'Passwords do not match';
+        }
+        if (!registrationData.acceptTerms) {
+          errors.acceptTerms = 'You must accept the Terms of Service';
+        }
+        if (!registrationData.acceptPrivacy) {
+          errors.acceptPrivacy = 'You must accept the Privacy Policy';
+        }
+        if (passwordStrength < 60) {
+          errors.passwordStrength = 'Password strength is too weak';
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+
       default:
         return false;
     }
   };
 
+  // Handle next step
+  const handleNextStep = () => {
+    if (validateStep(step)) {
+      setStep(step + 1);
+      setValidationErrors({});
+    }
+  };
+
+  // Handle registration
   // const handleRegister = async (e: React.FormEvent) => {
-  //   e.preventDefault()
-  //   clearError()
+  //   e.preventDefault();
+  //   clearError();
+  //   setValidationErrors({});
 
   //   if (!validateStep(3)) {
-  //     console.log('Validation failed:', {
-  //       passwordLength: registrationData.password.length,
-  //       passwordsMatch: registrationData.password === registrationData.confirmPassword,
-  //       acceptTerms: registrationData.acceptTerms,
-  //       acceptPrivacy: registrationData.acceptPrivacy,
-  //       passwordStrength
-  //     })
-  //     return
+  //     toast({
+  //       title: 'Validation Error',
+  //       description: 'Please complete all required fields correctly.',
+  //       variant: 'destructive',
+  //     });
+  //     return;
   //   }
 
   //   try {
@@ -116,23 +211,54 @@ export default function RegisterPage() {
   //       account_type: registrationData.accountType,
   //       password: registrationData.password,
   //       password_confirmation: registrationData.confirmPassword,
+  //       date_of_birth: dateOfBirth ? formatDate(dateOfBirth) : '',
   //       accept_terms: registrationData.acceptTerms,
-  //     }
+  //       is_admin: false,
+  //     };
 
-  //     await register(userData)
-  //     setRegistrationSuccess(true)
+  //     await register(userData);
+  //     setRegistrationSuccess(true);
 
+  //     toast({
+  //       title: 'Success',
+  //       description: 'Account created successfully! Please check your email to verify your account.',
+  //     });
+
+  //     // Redirect to verification page or login
   //     setTimeout(() => {
-  //       router.push('/dashboard')
-  //     }, 2000)
-  //   } catch (error) {
-  //     console.error('Registration failed:', error)
+  //       router.push('/auth/verify-email');
+  //     }, 3000);
+
+  //   } catch (error: any) {
+  //     // Handle server validation errors
+  //     if (error.response?.data?.errors) {
+  //       const serverErrors: Record<string, string> = {};
+  //       error.response.data.errors.forEach((err: any) => {
+  //         if (err.path) {
+  //           serverErrors[err.path] = err.msg;
+  //         }
+  //       });
+  //       setValidationErrors(serverErrors);
+
+  //       toast({
+  //         title: 'Registration Failed',
+  //         description: 'Please fix the errors below and try again.',
+  //         variant: 'destructive',
+  //       });
+  //     } else {
+  //       toast({
+  //         title: 'Registration Failed',
+  //         description: error?.message || 'Registration failed. Please try again.',
+  //         variant: 'destructive',
+  //       });
+  //     }
   //   }
-  // }
+  // };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    setValidationErrors({});
 
     if (!validateStep(3)) {
       toast({
@@ -152,27 +278,87 @@ export default function RegisterPage() {
         account_type: registrationData.accountType,
         password: registrationData.password,
         password_confirmation: registrationData.confirmPassword,
+        date_of_birth: dateOfBirth ? formatDate(dateOfBirth) : '',
         accept_terms: registrationData.acceptTerms,
-        // New users are not admins by default
         is_admin: false
       };
 
-      await register(userData);
+      const response = await register(userData);
       setRegistrationSuccess(true);
+
+      // Store email for verification page
+      localStorage.setItem(
+        'pending_verification_email',
+        registrationData.email
+      );
+
       toast({
-        title: 'Success',
-        description: 'Account created successfully! Redirecting to dashboard...'
+        title: 'Registration Successful!',
+        description:
+          'Please check your email to verify your account before logging in.'
       });
 
-      // After registration, user will be redirected based on their role
-      // The AuthProvider will handle this automatically
+      // Redirect to verification page
+      setTimeout(() => {
+        router.push(
+          `/auth/verify-email?email=${encodeURIComponent(registrationData.email)}`
+        );
+      }, 2000);
     } catch (error: any) {
-      console.error('Registration failed:', error);
-      toast({
-        title: 'Registration Failed',
-        description: error?.message || 'Registration failed. Please try again.',
-        variant: 'destructive'
-      });
+      // Handle server validation errors
+      if (error.response?.data?.errors) {
+        const serverErrors: Record<string, string> = {};
+        error.response.data.errors.forEach((err: any) => {
+          if (err.path) {
+            serverErrors[err.path] = err.msg;
+          }
+        });
+        setValidationErrors(serverErrors);
+
+        toast({
+          title: 'Registration Failed',
+          description: 'Please fix the errors below and try again.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Registration Failed',
+          description:
+            error?.message || 'Registration failed. Please try again.',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
+
+  // Get step validation status
+  const getStepStatus = (stepNumber: number) => {
+    switch (stepNumber) {
+      case 1:
+        return (
+          registrationData.firstName.trim() !== '' &&
+          registrationData.lastName.trim() !== '' &&
+          registrationData.email.trim() !== '' &&
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registrationData.email)
+        );
+      case 2:
+        return dateOfBirth !== undefined;
+      case 3:
+        const { hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChars } =
+          checkPasswordStrength(registrationData.password);
+        return (
+          registrationData.password.length >= 8 &&
+          hasUpperCase &&
+          hasLowerCase &&
+          hasNumbers &&
+          hasSpecialChars &&
+          registrationData.password === registrationData.confirmPassword &&
+          registrationData.acceptTerms &&
+          registrationData.acceptPrivacy &&
+          passwordStrength >= 60
+        );
+      default:
+        return false;
     }
   };
 
@@ -180,7 +366,6 @@ export default function RegisterPage() {
     <FormContainer
       title='Create Account'
       description='Join thousands of users banking with confidence'
-      //   icon={<UserPlus className="h-7 w-7 text-white" />}
       backText='Already have an account? Sign in'
       backLink='/auth/login'
     >
@@ -191,7 +376,7 @@ export default function RegisterPage() {
             <span className='font-medium text-gray-700'>Step {step} of 3</span>
             <span className='text-gray-500'>
               {step === 1 && 'Personal Info'}
-              {step === 2 && 'Account Type'}
+              {step === 2 && 'Account Details'}
               {step === 3 && 'Security'}
             </span>
           </div>
@@ -216,21 +401,36 @@ export default function RegisterPage() {
                   >
                     First Name *
                   </Label>
-                  <div className='group relative'>
-                    <Input
-                      id='firstName'
-                      placeholder='John'
-                      className='h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500'
-                      value={registrationData.firstName}
-                      onChange={(e) =>
-                        setRegistrationData({
-                          ...registrationData,
-                          firstName: e.target.value
-                        })
+                  <Input
+                    id='firstName'
+                    placeholder='John'
+                    className={`h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500 ${
+                      validationErrors.first_name || validationErrors.firstName
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : ''
+                    }`}
+                    value={registrationData.firstName}
+                    onChange={(e) => {
+                      setRegistrationData({
+                        ...registrationData,
+                        firstName: e.target.value
+                      });
+                      if (validationErrors.firstName) {
+                        setValidationErrors({
+                          ...validationErrors,
+                          firstName: ''
+                        });
                       }
-                      required
-                    />
-                  </div>
+                    }}
+                    required
+                  />
+                  {(validationErrors.first_name ||
+                    validationErrors.firstName) && (
+                    <p className='text-xs text-red-600'>
+                      {validationErrors.first_name ||
+                        validationErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className='space-y-2'>
                   <Label
@@ -242,16 +442,32 @@ export default function RegisterPage() {
                   <Input
                     id='lastName'
                     placeholder='Doe'
-                    className='h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500'
+                    className={`h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500 ${
+                      validationErrors.last_name || validationErrors.lastName
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : ''
+                    }`}
                     value={registrationData.lastName}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setRegistrationData({
                         ...registrationData,
                         lastName: e.target.value
-                      })
-                    }
+                      });
+                      if (validationErrors.lastName) {
+                        setValidationErrors({
+                          ...validationErrors,
+                          lastName: ''
+                        });
+                      }
+                    }}
                     required
                   />
+                  {(validationErrors.last_name ||
+                    validationErrors.lastName) && (
+                    <p className='text-xs text-red-600'>
+                      {validationErrors.last_name || validationErrors.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -262,22 +478,35 @@ export default function RegisterPage() {
                 >
                   Email Address *
                 </Label>
-                <div className='group relative'>
-                  <Input
-                    id='email'
-                    type='email'
-                    placeholder='john@example.com'
-                    className='h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500'
-                    value={registrationData.email}
-                    onChange={(e) =>
-                      setRegistrationData({
-                        ...registrationData,
-                        email: e.target.value
-                      })
+                <Input
+                  id='email'
+                  type='email'
+                  placeholder='john@example.com'
+                  className={`h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500 ${
+                    validationErrors.email
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                      : ''
+                  }`}
+                  value={registrationData.email}
+                  onChange={(e) => {
+                    setRegistrationData({
+                      ...registrationData,
+                      email: e.target.value
+                    });
+                    if (validationErrors.email) {
+                      setValidationErrors({
+                        ...validationErrors,
+                        email: ''
+                      });
                     }
-                    required
-                  />
-                </div>
+                  }}
+                  required
+                />
+                {validationErrors.email && (
+                  <p className='text-xs text-red-600'>
+                    {validationErrors.email}
+                  </p>
+                )}
               </div>
 
               <div className='space-y-2'>
@@ -287,26 +516,39 @@ export default function RegisterPage() {
                 >
                   Phone Number
                 </Label>
-                <div className='group relative'>
-                  <Input
-                    id='phone'
-                    type='tel'
-                    placeholder='+1 (555) 123-4567'
-                    className='h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500'
-                    value={registrationData.phone}
-                    onChange={(e) =>
-                      setRegistrationData({
-                        ...registrationData,
-                        phone: e.target.value
-                      })
+                <Input
+                  id='phone'
+                  type='tel'
+                  placeholder='+2348065843870'
+                  className={`h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500 ${
+                    validationErrors.phone
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                      : ''
+                  }`}
+                  value={registrationData.phone}
+                  onChange={(e) => {
+                    setRegistrationData({
+                      ...registrationData,
+                      phone: e.target.value
+                    });
+                    if (validationErrors.phone) {
+                      setValidationErrors({
+                        ...validationErrors,
+                        phone: ''
+                      });
                     }
-                  />
-                </div>
+                  }}
+                />
+                {validationErrors.phone && (
+                  <p className='text-xs text-red-600'>
+                    {validationErrors.phone}
+                  </p>
+                )}
               </div>
             </motion.div>
           )}
 
-          {/* Step 2: Account Type */}
+          {/* Step 2: Account Details */}
           {step === 2 && (
             <motion.div
               key='step2'
@@ -320,7 +562,7 @@ export default function RegisterPage() {
                   htmlFor='accountType'
                   className='text-sm font-medium text-gray-700'
                 >
-                  Account Type
+                  Account Type *
                 </Label>
                 <Select
                   value={registrationData.accountType}
@@ -331,7 +573,13 @@ export default function RegisterPage() {
                     })
                   }
                 >
-                  <SelectTrigger className='h-11 rounded-lg border-gray-300 text-gray-900'>
+                  <SelectTrigger
+                    className={`h-11 rounded-lg border-gray-300 text-gray-900 ${
+                      validationErrors.account_type
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : ''
+                    }`}
+                  >
                     <SelectValue placeholder='Select account type' />
                   </SelectTrigger>
                   <SelectContent className='bg-white'>
@@ -355,9 +603,76 @@ export default function RegisterPage() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {validationErrors.account_type && (
+                  <p className='text-xs text-red-600'>
+                    {validationErrors.account_type}
+                  </p>
+                )}
               </div>
 
-              <div className='rounded-lg border border-blue-200 bg-linear-to-br from-blue-50 to-indigo-50 p-4'>
+              <div className='space-y-2'>
+                <Label className='text-sm font-medium text-gray-700'>
+                  Date of Birth *
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant='outline'
+                      className={`h-11 w-full justify-start rounded-lg border-gray-300 text-left font-normal ${
+                        validationErrors.date_of_birth
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          : ''
+                      }`}
+                    >
+                      <Calendar className='mr-2 h-4 w-4' />
+                      {dateOfBirth ? (
+                        format(dateOfBirth, 'PPP')
+                      ) : (
+                        <span className='text-gray-500'>
+                          Select your date of birth
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className='w-auto p-0' align='start'>
+                    <CalendarComponent
+                      mode='single'
+                      selected={dateOfBirth}
+                      onSelect={(date) => {
+                        setDateOfBirth(date);
+                        if (validationErrors.date_of_birth) {
+                          setValidationErrors({
+                            ...validationErrors,
+                            date_of_birth: ''
+                          });
+                        }
+                      }}
+                      disabled={(date) => {
+                        const today = new Date();
+                        const minDate = new Date();
+                        minDate.setFullYear(today.getFullYear() - 100);
+                        const maxDate = new Date();
+                        maxDate.setFullYear(today.getFullYear() - 18);
+                        return date > maxDate || date < minDate;
+                      }}
+                      initialFocus
+                      captionLayout='dropdown-buttons'
+                      fromYear={1920}
+                      toYear={new Date().getFullYear() - 18}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {validationErrors.date_of_birth && (
+                  <p className='text-xs text-red-600'>
+                    {validationErrors.date_of_birth}
+                  </p>
+                )}
+                <p className='text-xs text-gray-500'>
+                  You must be at least 18 years old to register
+                </p>
+              </div>
+
+              <div className='rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4'>
                 <h4 className='mb-2 text-sm font-semibold text-blue-800'>
                   Features Included:
                 </h4>
@@ -406,7 +721,11 @@ export default function RegisterPage() {
                     id='password'
                     type={showPassword ? 'text' : 'password'}
                     placeholder='Create a strong password'
-                    className='h-11 rounded-lg border-gray-300 pr-2 pl-10 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500'
+                    className={`h-11 rounded-lg border-gray-300 pr-10 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500 ${
+                      validationErrors.password
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : ''
+                    }`}
                     value={registrationData.password}
                     onChange={(e) => {
                       setRegistrationData({
@@ -414,6 +733,12 @@ export default function RegisterPage() {
                         password: e.target.value
                       });
                       checkPasswordStrength(e.target.value);
+                      if (validationErrors.password) {
+                        setValidationErrors({
+                          ...validationErrors,
+                          password: ''
+                        });
+                      }
                     }}
                     required
                   />
@@ -464,11 +789,57 @@ export default function RegisterPage() {
                               : 'bg-green-500'
                       }`}
                     />
-                    <div className='text-xs text-gray-500'>
-                      Minimum 8 characters with uppercase, lowercase, number,
-                      and special character
-                    </div>
                   </div>
+                )}
+
+                {/* Password requirements */}
+                <div className='mt-2 space-y-1 text-xs'>
+                  <div
+                    className={`flex items-center gap-2 ${/[A-Z]/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                  >
+                    <div
+                      className={`h-2 w-2 rounded-full ${/[A-Z]/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
+                    At least one uppercase letter
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 ${/[a-z]/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                  >
+                    <div
+                      className={`h-2 w-2 rounded-full ${/[a-z]/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
+                    At least one lowercase letter
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 ${/\d/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                  >
+                    <div
+                      className={`h-2 w-2 rounded-full ${/\d/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
+                    At least one number
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 ${/[!@#$%^&*(),.?":{}|<>]/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                  >
+                    <div
+                      className={`h-2 w-2 rounded-full ${/[!@#$%^&*(),.?":{}|<>]/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
+                    At least one special character
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 ${registrationData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}`}
+                  >
+                    <div
+                      className={`h-2 w-2 rounded-full ${registrationData.password.length >= 8 ? 'bg-green-500' : 'bg-gray-300'}`}
+                    />
+                    Minimum 8 characters
+                  </div>
+                </div>
+
+                {validationErrors.password && (
+                  <p className='text-xs text-red-600'>
+                    {validationErrors.password}
+                  </p>
                 )}
               </div>
 
@@ -484,14 +855,24 @@ export default function RegisterPage() {
                     id='confirmPassword'
                     type={showConfirmPassword ? 'text' : 'password'}
                     placeholder='Confirm your password'
-                    className='h-11 rounded-lg border-gray-300 pr-2 pl-10 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500'
+                    className={`h-11 rounded-lg border-gray-300 pr-10 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500 ${
+                      validationErrors.confirmPassword
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : ''
+                    }`}
                     value={registrationData.confirmPassword}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setRegistrationData({
                         ...registrationData,
                         confirmPassword: e.target.value
-                      })
-                    }
+                      });
+                      if (validationErrors.confirmPassword) {
+                        setValidationErrors({
+                          ...validationErrors,
+                          confirmPassword: ''
+                        });
+                      }
+                    }}
                     required
                   />
                   <button
@@ -506,13 +887,11 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
-                {registrationData.password !==
-                  registrationData.confirmPassword &&
-                  registrationData.confirmPassword && (
-                    <p className='text-xs text-red-600'>
-                      Passwords do not match
-                    </p>
-                  )}
+                {validationErrors.confirmPassword && (
+                  <p className='text-xs text-red-600'>
+                    {validationErrors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               <div className='space-y-3'>
@@ -520,12 +899,18 @@ export default function RegisterPage() {
                   <Checkbox
                     id='acceptTerms'
                     checked={registrationData.acceptTerms}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked) => {
                       setRegistrationData({
                         ...registrationData,
                         acceptTerms: checked as boolean
-                      })
-                    }
+                      });
+                      if (validationErrors.acceptTerms) {
+                        setValidationErrors({
+                          ...validationErrors,
+                          acceptTerms: ''
+                        });
+                      }
+                    }}
                     required
                     className='border-gray-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600'
                   />
@@ -535,24 +920,35 @@ export default function RegisterPage() {
                   >
                     I agree to the{' '}
                     <a
-                      href='#'
+                      href='/terms'
                       className='font-medium text-blue-600 hover:underline'
                     >
                       Terms of Service *
                     </a>
                   </label>
                 </div>
+                {validationErrors.acceptTerms && (
+                  <p className='pl-9 text-xs text-red-600'>
+                    {validationErrors.acceptTerms}
+                  </p>
+                )}
 
                 <div className='flex items-start space-x-3'>
                   <Checkbox
                     id='acceptPrivacy'
                     checked={registrationData.acceptPrivacy}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked) => {
                       setRegistrationData({
                         ...registrationData,
                         acceptPrivacy: checked as boolean
-                      })
-                    }
+                      });
+                      if (validationErrors.acceptPrivacy) {
+                        setValidationErrors({
+                          ...validationErrors,
+                          acceptPrivacy: ''
+                        });
+                      }
+                    }}
                     required
                     className='border-gray-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600'
                   />
@@ -562,117 +958,42 @@ export default function RegisterPage() {
                   >
                     I have read and agree to the{' '}
                     <a
-                      href='#'
+                      href='/privacy'
                       className='font-medium text-blue-600 hover:underline'
                     >
                       Privacy Policy *
                     </a>
                   </label>
                 </div>
-              </div>
-
-              {/* Validation Status */}
-              <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
-                <h4 className='mb-2 text-sm font-medium text-gray-700'>
-                  Requirements Status:
-                </h4>
-                <ul className='space-y-1.5 text-xs'>
-                  <li className='flex items-center gap-2'>
-                    <div
-                      className={`h-2 w-2 rounded-full ${registrationData.password.length >= 8 ? 'bg-green-500' : 'bg-gray-300'}`}
-                    />
-                    <span
-                      className={
-                        registrationData.password.length >= 8
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      }
-                    >
-                      Password at least 8 characters
-                    </span>
-                  </li>
-                  <li className='flex items-center gap-2'>
-                    <div
-                      className={`h-2 w-2 rounded-full ${registrationData.password === registrationData.confirmPassword && registrationData.password !== '' ? 'bg-green-500' : 'bg-gray-300'}`}
-                    />
-                    <span
-                      className={
-                        registrationData.password ===
-                          registrationData.confirmPassword &&
-                        registrationData.password !== ''
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      }
-                    >
-                      Passwords match
-                    </span>
-                  </li>
-                  <li className='flex items-center gap-2'>
-                    <div
-                      className={`h-2 w-2 rounded-full ${passwordStrength >= 60 ? 'bg-green-500' : 'bg-gray-300'}`}
-                    />
-                    <span
-                      className={
-                        passwordStrength >= 60
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      }
-                    >
-                      Password strength sufficient
-                    </span>
-                  </li>
-                  <li className='flex items-center gap-2'>
-                    <div
-                      className={`h-2 w-2 rounded-full ${registrationData.acceptTerms ? 'bg-green-500' : 'bg-gray-300'}`}
-                    />
-                    <span
-                      className={
-                        registrationData.acceptTerms
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      }
-                    >
-                      Terms of Service accepted
-                    </span>
-                  </li>
-                  <li className='flex items-center gap-2'>
-                    <div
-                      className={`h-2 w-2 rounded-full ${registrationData.acceptPrivacy ? 'bg-green-500' : 'bg-gray-300'}`}
-                    />
-                    <span
-                      className={
-                        registrationData.acceptPrivacy
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      }
-                    >
-                      Privacy Policy accepted
-                    </span>
-                  </li>
-                </ul>
+                {validationErrors.acceptPrivacy && (
+                  <p className='pl-9 text-xs text-red-600'>
+                    {validationErrors.acceptPrivacy}
+                  </p>
+                )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {error && (
+        {/* Display server errors */}
+        {error && !Object.keys(validationErrors).length && (
           <Alert variant='destructive' className='border-red-200 bg-red-50'>
             <AlertDescription className='text-sm text-red-700'>
-              {error || 'Registration failed. Please try again.'}
+              {error}
             </AlertDescription>
           </Alert>
         )}
 
         {registrationSuccess && (
-          <Alert className='border border-green-200 bg-linear-to-r from-green-50 to-emerald-50'>
+          <Alert className='border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50'>
             <AlertDescription className='text-sm text-green-800'>
-              <strong>Account created successfully!</strong> Redirecting to
-              dashboard...
+              <strong>Account created successfully!</strong> Please check your
+              email to verify your account.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Navigation Buttons - ALWAYS VISIBLE */}
+        {/* Navigation Buttons */}
         <div className='flex justify-between pt-4'>
           {step > 1 ? (
             <Button
@@ -682,20 +1003,21 @@ export default function RegisterPage() {
               className='h-11 rounded-lg border-gray-300 text-gray-700 hover:border-gray-400'
               disabled={isLoading || registrationSuccess}
             >
+              <ChevronLeft className='mr-2 h-4 w-4' />
               Previous
             </Button>
           ) : (
-            <div /> // Empty div to maintain spacing
+            <div />
           )}
 
           {step < 3 ? (
             <Button
               type='button'
-              onClick={() => setStep(step + 1)}
-              className={`h-11 rounded-lg bg-linear-to-r from-blue-600 to-purple-600 text-white shadow-md transition-all hover:from-blue-700 hover:to-purple-700 hover:shadow-lg ${
+              onClick={handleNextStep}
+              className={`h-11 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md transition-all hover:from-blue-700 hover:to-purple-700 hover:shadow-lg ${
                 step > 1 ? 'ml-auto' : 'w-full'
               }`}
-              disabled={!validateStep(step) || isLoading}
+              disabled={isLoading}
             >
               Continue
               <ArrowRight className='ml-2 h-4 w-4' />
@@ -703,10 +1025,10 @@ export default function RegisterPage() {
           ) : (
             <Button
               type='submit'
-              className={`h-11 rounded-sm !bg-gradient-to-r !from-green-600 !to-emerald-600 text-black shadow-md transition-all hover:from-green-700 hover:to-emerald-700 hover:shadow-lg ${
+              className={`h-11 rounded-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md transition-all hover:from-green-700 hover:to-emerald-700 hover:shadow-lg ${
                 step === 3 ? 'w-fit' : 'ml-auto'
               }`}
-              disabled={!validateStep(3) || isLoading || registrationSuccess}
+              disabled={isLoading || registrationSuccess}
             >
               {isLoading ? (
                 <>
@@ -721,6 +1043,33 @@ export default function RegisterPage() {
               )}
             </Button>
           )}
+        </div>
+
+        {/* Step Indicators */}
+        <div className='flex justify-center space-x-2 pt-4'>
+          {[1, 2, 3].map((stepNumber) => (
+            <button
+              key={stepNumber}
+              type='button'
+              onClick={() => {
+                if (stepNumber < step || getStepStatus(stepNumber - 1)) {
+                  setStep(stepNumber);
+                }
+              }}
+              className={`h-2 w-8 rounded-full transition-all ${
+                step === stepNumber
+                  ? 'bg-blue-600'
+                  : step > stepNumber
+                    ? 'bg-green-500'
+                    : 'bg-gray-300'
+              } ${
+                stepNumber < step || getStepStatus(stepNumber - 1)
+                  ? 'cursor-pointer'
+                  : 'cursor-not-allowed'
+              }`}
+              disabled={isLoading}
+            />
+          ))}
         </div>
       </form>
     </FormContainer>
