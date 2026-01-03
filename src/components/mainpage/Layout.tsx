@@ -261,7 +261,7 @@ function MobileNav() {
               {/* <img src='/assets/images/resources/mobile-nav-logo.png' alt='' /> */}
 
               <img
-                className='h-14 w-20 md:h-12 md:w-32'
+                className='h-14 w-20'
                 src='/assets/images/shapes/card-banner-area-bg.png'
                 alt='Fidelitybank Logo'
               />
