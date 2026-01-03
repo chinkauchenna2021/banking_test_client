@@ -149,10 +149,10 @@ export default function Layout({ children }: LayoutProps) {
           src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js'
           strategy='afterInteractive'
         />
-        <Script
+        {/* <Script
           src='http://localhost:3000/assets/vendors/jquery/jquery-3.6.0.min.js'
           strategy='afterInteractive'
-        />
+        /> */}
         <Script
           src='http://localhost:3000/assets/vendors/bootstrap/js/bootstrap.bundle.min.js'
           strategy='afterInteractive'
