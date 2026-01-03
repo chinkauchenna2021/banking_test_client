@@ -618,17 +618,17 @@ export default function RegisterPage() {
                   <PopoverTrigger asChild>
                     <Button
                       variant='outline'
-                      className={`h-11 w-full justify-start rounded-lg border-gray-300 text-left font-normal ${
+                      className={`h-11 w-full justify-start rounded-lg border-gray-700 text-left font-normal ${
                         validationErrors.date_of_birth
                           ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                           : ''
                       }`}
                     >
-                      <Calendar className='mr-2 h-4 w-4' />
+                      <Calendar className='mr-2 h-4 w-4 text-black' />
                       {dateOfBirth ? (
                         format(dateOfBirth, 'PPP')
                       ) : (
-                        <span className='text-gray-500'>
+                        <span className='text-gray-700'>
                           Select your date of birth
                         </span>
                       )}
@@ -637,6 +637,7 @@ export default function RegisterPage() {
                   <PopoverContent className='w-auto p-0' align='start'>
                     <CalendarComponent
                       mode='single'
+                      className='text-black'
                       selected={dateOfBirth}
                       onSelect={(date) => {
                         setDateOfBirth(date);
@@ -667,7 +668,7 @@ export default function RegisterPage() {
                     {validationErrors.date_of_birth}
                   </p>
                 )}
-                <p className='text-xs text-gray-500'>
+                <p className='text-xs text-gray-700'>
                   You must be at least 18 years old to register
                 </p>
               </div>
