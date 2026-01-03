@@ -9,6 +9,7 @@ import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import StoreProvider from '@/components/providers/StoreProvider';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { Toaster as Toasters } from '@/components/ui/toaster';
 import './globals.css';
 import './theme.css';
 
@@ -65,6 +66,7 @@ export default async function RootLayout({
               <AuthProvider>
                 <StoreProvider>
                   {children}
+                  <Toasters />
                   <Toaster />
                 </StoreProvider>
               </AuthProvider>

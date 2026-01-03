@@ -9,6 +9,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormContainer } from '@/components/auth/FormContainer';
@@ -16,6 +17,7 @@ import { FormContainer } from '@/components/auth/FormContainer';
 export default function LoginPage() {
   const router = useRouter();
   const { login, error, clearError, isLoading } = useAuth();
+  const { toast } = useToast();
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -33,6 +35,11 @@ export default function LoginPage() {
       await login(loginData.email, loginData.password);
       setLoginSuccess(true);
 
+      toast({
+        title: 'Success',
+        description: 'Login successful! Redirecting...'
+      });
+
       // Get the user data to check if admin
       const { user } = useAuth();
 
@@ -44,8 +51,12 @@ export default function LoginPage() {
           router.push('/dashboard');
         }
       }, 1500);
-    } catch (error) {
-      console.error('Login failed:', error);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.message || 'Login failed. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 import {
   User,
   Mail,
@@ -33,6 +34,7 @@ import { FormContainer } from '@/components/auth/FormContainer';
 export default function RegisterPage() {
   const router = useRouter();
   const { register, error, clearError, isLoading } = useAuth();
+  const { toast } = useToast();
 
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
@@ -133,6 +135,11 @@ export default function RegisterPage() {
     clearError();
 
     if (!validateStep(3)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please complete all required fields correctly.',
+        variant: 'destructive'
+      });
       return;
     }
 
@@ -152,11 +159,20 @@ export default function RegisterPage() {
 
       await register(userData);
       setRegistrationSuccess(true);
+      toast({
+        title: 'Success',
+        description: 'Account created successfully! Redirecting to dashboard...'
+      });
 
       // After registration, user will be redirected based on their role
       // The AuthProvider will handle this automatically
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration failed:', error);
+      toast({
+        title: 'Registration Failed',
+        description: error?.message || 'Registration failed. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -347,19 +363,19 @@ export default function RegisterPage() {
                 </h4>
                 <ul className='space-y-1.5 text-sm text-blue-700'>
                   <li className='flex items-start gap-2'>
-                    <div className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-800'>
+                    <div className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-800'>
                       ✓
                     </div>
                     <span>No monthly maintenance fees</span>
                   </li>
                   <li className='flex items-start gap-2'>
-                    <div className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-800'>
+                    <div className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-800'>
                       ✓
                     </div>
                     <span>Free domestic transfers</span>
                   </li>
                   <li className='flex items-start gap-2'>
-                    <div className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-800'>
+                    <div className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-800'>
                       ✓
                     </div>
                     <span>24/7 customer support</span>
@@ -648,7 +664,7 @@ export default function RegisterPage() {
         )}
 
         {registrationSuccess && (
-          <Alert className='border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50'>
+          <Alert className='border border-green-200 bg-linear-to-r from-green-50 to-emerald-50'>
             <AlertDescription className='text-sm text-green-800'>
               <strong>Account created successfully!</strong> Redirecting to
               dashboard...
@@ -676,7 +692,7 @@ export default function RegisterPage() {
             <Button
               type='button'
               onClick={() => setStep(step + 1)}
-              className={`h-11 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md transition-all hover:from-blue-700 hover:to-purple-700 hover:shadow-lg ${
+              className={`h-11 rounded-lg bg-linear-to-r from-blue-600 to-purple-600 text-white shadow-md transition-all hover:from-blue-700 hover:to-purple-700 hover:shadow-lg ${
                 step > 1 ? 'ml-auto' : 'w-full'
               }`}
               disabled={!validateStep(step) || isLoading}
