@@ -131,7 +131,7 @@ export default function Layout({ children }: LayoutProps) {
       </div>
       <div>
         <div>
-          <Preloader />
+          {/* <Preloader /> */}
           <div className='page-wrapper'>
             <Header />
             {children}
