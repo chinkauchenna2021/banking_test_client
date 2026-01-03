@@ -149,7 +149,10 @@ export default function Layout({ children }: LayoutProps) {
           src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js'
           strategy='afterInteractive'
         />
-        {/* <Script  src="http://localhost:3000/assets/vendors/jquery/jquery-3.6.0.min.js"  strategy="afterInteractive"/> */}
+        <Script
+          src='http://localhost:3000/assets/vendors/jquery/jquery-3.6.0.min.js'
+          strategy='afterInteractive'
+        />
         <Script
           src='http://localhost:3000/assets/vendors/bootstrap/js/bootstrap.bundle.min.js'
           strategy='afterInteractive'
@@ -254,7 +257,20 @@ function MobileNav() {
         </span>
         <div className='logo-box'>
           <a href='/' aria-label='logo image'>
-            <img src='/assets/images/resources/mobile-nav-logo.png' alt='' />
+            <div className='-mt-1 flex w-full flex-row items-center justify-start space-x-4'>
+              {/* <img src='/assets/images/resources/mobile-nav-logo.png' alt='' /> */}
+
+              <img
+                className='h-14 w-20 md:h-12 md:w-32'
+                src='/assets/images/shapes/card-banner-area-bg.png'
+                alt='Fidelitybank Logo'
+              />
+              <div className='h-fit w-fit'>
+                <h3 className='text-md! md:text-md! font-extrabold tracking-wide text-white'>
+                  Fidelity Offshore
+                </h3>
+              </div>
+            </div>
           </a>
         </div>
         <div className='mobile-nav__container'></div>
