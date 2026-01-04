@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect } from 'react';
 import { useAuthStore } from '../stores/auth.store';
@@ -34,16 +34,22 @@ export const useAuth = () => {
     isAuthenticated,
     isLoading,
     error,
-    login,
+    login: async (email: string, password: string) => {
+      return await login(email, password);
+    },
     logout,
     getProfile,
     clearError,
-    register,
+    register: async (userData: any) => {
+      return await register(userData);
+    },
     forgotPassword,
     refreshAccessToken,
     resetPassword,
     changePassword,
-    verifyEmail,
+    verifyEmail: async (token: string) => {
+      return await verifyEmail(token);
+    },
     verifyTwoFactor,
     isAdmin: user?.is_admin || false
   };

@@ -23,7 +23,8 @@ import {
   RefreshCw,
   ArrowRight,
   Shield,
-  Timer
+  Timer,
+  AlertTriangle
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
@@ -33,8 +34,11 @@ export default function VerifyEmailPage() {
   const { verifyEmail, error, clearError, isLoading } = useAuth();
   const { toast } = useToast();
 
+  const email =
+    searchParams.get('email') ||
+    localStorage.getItem('pending_verification_email') ||
+    '';
   const token = searchParams.get('token');
-  const [email, setEmail] = useState('');
   const [verificationToken, setVerificationToken] = useState(token || '');
   const [isVerified, setIsVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -65,13 +69,12 @@ export default function VerifyEmailPage() {
 
       toast({
         title: 'Email Verified!',
-        description:
-          'Your email has been verified successfully. Redirecting to login...'
+        description: 'Your account is now active. Redirecting to dashboard...'
       });
 
-      // Redirect to login after 3 seconds
+      // Redirect to dashboard after 3 seconds
       setTimeout(() => {
-        router.push('/auth/login');
+        router.push('/dashboard');
       }, 3000);
     } catch (error: any) {
       toast({
@@ -106,12 +109,12 @@ export default function VerifyEmailPage() {
 
       toast({
         title: 'Email Verified!',
-        description: 'Your email has been verified successfully.'
+        description: 'Your account is now active.'
       });
 
-      // Redirect to login after 2 seconds
+      // Redirect to dashboard after 2 seconds
       setTimeout(() => {
-        router.push('/auth/login');
+        router.push('/dashboard');
       }, 2000);
     } catch (error: any) {
       toast({
@@ -132,10 +135,7 @@ export default function VerifyEmailPage() {
     clearError();
 
     try {
-      const response = await apiClient.post('/auth/resend-verification', {
-        email
-      });
-
+      await apiClient.post('/auth/resend-verification', { email });
       setEmailSent(true);
       setCountdown(60); // 60 seconds cooldown
 
@@ -167,12 +167,12 @@ export default function VerifyEmailPage() {
             </div>
           </div>
           <CardTitle className='text-center text-2xl font-bold text-gray-900'>
-            {isVerified ? 'Email Verified!' : 'Verify Your Email'}
+            {isVerified ? 'Account Activated!' : 'Verify Your Email'}
           </CardTitle>
           <CardDescription className='text-center text-gray-600'>
             {isVerified
-              ? 'Your email has been successfully verified. You can now log in to your account.'
-              : 'Enter the verification token sent to your email address.'}
+              ? 'Your account has been successfully activated. You can now access all features.'
+              : 'Enter the verification token sent to your email address to activate your account.'}
           </CardDescription>
         </CardHeader>
 
@@ -184,25 +184,35 @@ export default function VerifyEmailPage() {
               </div>
               <Alert className='border-green-200 bg-green-50'>
                 <AlertDescription className='text-green-800'>
-                  <p className='font-semibold'>🎉 Verification Successful!</p>
+                  <p className='font-semibold'>
+                    🎉 Account Activated Successfully!
+                  </p>
                   <p className='mt-1 text-sm'>
-                    Your email address has been verified. Redirecting to
-                    login...
+                    Your email address has been verified and your account is now
+                    active. Redirecting to dashboard...
                   </p>
                 </AlertDescription>
               </Alert>
               <div className='pt-4'>
                 <Button
-                  onClick={() => router.push('/auth/login')}
-                  className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                  onClick={() => router.push('/dashboard')}
+                  className='w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
                 >
-                  Go to Login
+                  Go to Dashboard
                   <ArrowRight className='ml-2 h-4 w-4' />
                 </Button>
               </div>
             </div>
           ) : (
             <>
+              <Alert className='mb-6 border-amber-200 bg-amber-50'>
+                <AlertTriangle className='h-4 w-4 text-amber-600' />
+                <AlertDescription className='text-amber-800'>
+                  <strong>Important:</strong> You must verify your email before
+                  you can log in and use your account.
+                </AlertDescription>
+              </Alert>
+
               {emailSent && (
                 <Alert className='mb-6 border-blue-200 bg-blue-50'>
                   <AlertDescription className='text-blue-800'>
@@ -220,26 +230,24 @@ export default function VerifyEmailPage() {
               )}
 
               <form onSubmit={handleManualVerify} className='space-y-6'>
-                {!token && (
-                  <div className='space-y-2'>
-                    <Label
-                      htmlFor='email'
-                      className='text-sm font-medium text-gray-700'
-                    >
-                      Email Address *
-                    </Label>
-                    <Input
-                      id='email'
-                      type='email'
-                      placeholder='Enter the email you registered with'
-                      className='h-11 rounded-lg border-gray-300'
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isVerifying || isResending}
-                    />
-                  </div>
-                )}
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='email'
+                    className='text-sm font-medium text-gray-700'
+                  >
+                    Email Address
+                  </Label>
+                  <Input
+                    id='email'
+                    type='email'
+                    value={email}
+                    readOnly
+                    className='h-11 rounded-lg border-gray-300 bg-gray-50'
+                  />
+                  <p className='text-xs text-gray-500'>
+                    Verification link was sent to this email address
+                  </p>
+                </div>
 
                 <div className='space-y-2'>
                   <Label
@@ -251,7 +259,7 @@ export default function VerifyEmailPage() {
                   <Input
                     id='token'
                     type='text'
-                    placeholder='Enter your 32-character verification token'
+                    placeholder='Enter the token from your email'
                     className='h-11 rounded-lg border-gray-300 font-mono'
                     value={verificationToken}
                     onChange={(e) => setVerificationToken(e.target.value)}
@@ -259,7 +267,7 @@ export default function VerifyEmailPage() {
                     disabled={isVerifying || isResending}
                   />
                   <p className='text-xs text-gray-500'>
-                    The token was sent to your email address after registration
+                    Check your email for the verification token
                   </p>
                 </div>
 
@@ -271,12 +279,12 @@ export default function VerifyEmailPage() {
                   {isVerifying ? (
                     <>
                       <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
-                      Verifying...
+                      Activating Account...
                     </>
                   ) : (
                     <>
                       <CheckCircle className='mr-2 h-4 w-4' />
-                      Verify Email
+                      Activate Account
                     </>
                   )}
                 </Button>

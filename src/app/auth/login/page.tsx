@@ -1,267 +1,193 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, LogIn } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FormContainer } from '@/components/auth/FormContainer';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
+import { Shield, CheckCircle, XCircle, Key } from 'lucide-react';
 
-export default function LoginPage() {
+export default function VerifyTwoFactorPage() {
   const router = useRouter();
-  const { login, error, clearError, isLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const { verifyTwoFactor, error, clearError, isLoading } = useAuth();
   const { toast } = useToast();
 
-  const [loginData, setLoginData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
+  const tempToken = searchParams.get('temp_token') || '';
+  const [code, setCode] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
 
+    if (!code.trim() || code.length !== 6) {
+      toast({
+        title: 'Invalid Code',
+        description: 'Please enter a valid 6-digit code',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
-      await login(loginData.email, loginData.password);
-      setLoginSuccess(true);
+      await verifyTwoFactor(tempToken, code);
+      setIsVerified(true);
 
       toast({
-        title: 'Success',
-        description: 'Login successful! Redirecting...'
+        title: '2FA Verification Successful!',
+        description: 'You are now logged in.'
       });
 
-      // Get the user data to check if admin
-      const { user } = useAuth();
-
-      // Redirect based on user role
       setTimeout(() => {
-        if (user?.is_admin) {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
-      }, 1500);
+        router.push('/dashboard');
+      }, 2000);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.message || 'Login failed. Please try again.',
+        title: 'Verification Failed',
+        description: error?.message || 'Invalid verification code',
         variant: 'destructive'
       });
     }
   };
 
-  const handleDemoLogin = async (type: 'user' | 'admin') => {
-    clearError();
-
-    const demoCredentials = {
-      user: {
-        email: 'user@demo.com',
-        password: 'demo123'
-      },
-      admin: {
-        email: 'admin@demo.com',
-        password: 'admin123'
-      }
-    };
-
-    try {
-      await login(demoCredentials[type].email, demoCredentials[type].password);
-      setLoginSuccess(true);
-
-      // Since we can't access useAuth hook here synchronously,
-      // we'll handle the redirection based on the login type
-      setTimeout(() => {
-        router.push(type === 'admin' ? '/admin' : '/dashboard');
-      }, 1500);
-    } catch (error) {
-      console.error('Demo login failed:', error);
-    }
-  };
-
   return (
-    <FormContainer
-      title='Welcome Back'
-      description='Sign in to your account to continue'
-      //   icon={<LogIn className="h-7 w-7 text-white" />}
-      backText='Need an account? Sign up'
-      backLink='/auth/register'
-      footer={
-        <div className='space-y-2 text-center text-xs text-gray-500'>
-          <div className='flex items-center justify-center gap-2'>
-            <div className='h-1.5 w-1.5 animate-pulse rounded-full bg-green-500' />
-            <span>Secure Connection • 256-bit Encryption</span>
-          </div>
-        </div>
-      }
-    >
-      <div className='space-y-6'>
-        {/* Demo Login Buttons */}
-        {/* <div className="grid grid-cols-2 gap-3">
-          <Button
-            onClick={() => handleDemoLogin('user')}
-            variant="outline"
-            className="h-12 rounded-lg border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all"
-            disabled={isLoading}
-          >
-            <span className="text-sm">User Demo</span>
-          </Button>
-          <Button
-            onClick={() => handleDemoLogin('admin')}
-            variant="outline"
-            className="h-12 rounded-lg border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all"
-            disabled={isLoading}
-          >
-            <span className="text-sm">Admin Demo</span>
-          </Button>
-        </div>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-3 bg-white text-gray-500">Or sign in with email</span>
-          </div>
-        </div> */}
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className='space-y-6'>
-          <div className='space-y-4'>
-            <Label
-              htmlFor='email'
-              className='text-sm font-medium text-gray-700'
-            >
-              Email Address
-            </Label>
-            <div className='group relative'>
-              <Mail className='absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 transform text-gray-400 transition-colors group-focus-within:text-blue-500' />
-              <Input
-                // prefix={<Mail className="h-5 w-5 text-gray-400" />}
-                id='email'
-                type='email'
-                placeholder='you@example.com'
-                style={{ color: 'black' }}
-                className='h-12 rounded-sm border-gray-300 pl-12 text-base !text-black transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500'
-                value={loginData.email}
-                onChange={(e) =>
-                  setLoginData({ ...loginData, email: e.target.value })
-                }
-                required
-                disabled={isLoading}
-              />
+    <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-4'>
+      <Card className='w-full max-w-md border-gray-200 shadow-xl'>
+        <CardHeader className='space-y-1'>
+          <div className='mb-4 flex justify-center'>
+            <div className='flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-purple-100'>
+              <Shield className='h-8 w-8 text-blue-600' />
             </div>
           </div>
+          <CardTitle className='text-center text-2xl font-bold text-gray-900'>
+            Two-Factor Authentication
+          </CardTitle>
+          <CardDescription className='text-center text-gray-600'>
+            Enter the 6-digit verification code from your authenticator app
+          </CardDescription>
+        </CardHeader>
 
-          <div className='space-y-4'>
-            <div className='flex items-center justify-between'>
-              <Label
-                htmlFor='password'
-                className='text-sm font-medium text-gray-700'
-              >
-                Password
-              </Label>
-              <Link
-                href='/auth/forgot-password'
-                className='text-sm text-blue-600 transition-colors hover:text-blue-800 hover:underline'
-              >
-                Forgot password?
-              </Link>
+        <CardContent>
+          {isVerified ? (
+            <div className='space-y-6 text-center'>
+              <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-100 to-emerald-100'>
+                <CheckCircle className='h-10 w-10 text-green-600' />
+              </div>
+              <Alert className='border-green-200 bg-green-50'>
+                <AlertDescription className='text-green-800'>
+                  <p className='font-semibold'>✅ Verification Successful!</p>
+                  <p className='mt-1 text-sm'>
+                    Two-factor authentication verified. Redirecting to
+                    dashboard...
+                  </p>
+                </AlertDescription>
+              </Alert>
             </div>
-            <div className='group relative'>
-              <Lock className='absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 transform text-gray-400 transition-colors group-focus-within:text-blue-500' />
-              <Input
-                id='password'
-                type={showPassword ? 'text' : 'password'}
-                placeholder='Enter your password'
-                style={{ color: 'black' }}
-                className='h-12 rounded-sm border-gray-300 pr-12 pl-12 !text-black transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500'
-                value={loginData.password}
-                onChange={(e) =>
-                  setLoginData({ ...loginData, password: e.target.value })
-                }
-                required
-                disabled={isLoading}
-              />
-              <button
-                type='button'
-                onClick={() => setShowPassword(!showPassword)}
-                className='absolute top-1/2 right-4 -translate-y-1/2 transform p-1 text-gray-400 transition-colors hover:text-gray-600'
-                disabled={isLoading}
-              >
-                {showPassword ? (
-                  <EyeOff className='h-5 w-5' />
-                ) : (
-                  <Eye className='h-5 w-5' />
-                )}
-              </button>
-            </div>
-          </div>
+          ) : (
+            <>
+              {error && (
+                <Alert variant='destructive' className='mb-6'>
+                  <XCircle className='h-4 w-4' />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <Checkbox
-                id='remember'
-                checked={loginData.rememberMe}
-                onCheckedChange={(checked) =>
-                  setLoginData({ ...loginData, rememberMe: checked as boolean })
-                }
-                disabled={isLoading}
-                className='h-5 w-5'
-              />
-              <Label htmlFor='remember' className='text-sm text-gray-600'>
-                Remember me
-              </Label>
-            </div>
-          </div>
+              <form onSubmit={handleVerify} className='space-y-6'>
+                <div className='space-y-2'>
+                  <Label
+                    htmlFor='code'
+                    className='text-sm font-medium text-gray-700'
+                  >
+                    6-Digit Verification Code *
+                  </Label>
+                  <Input
+                    id='code'
+                    type='text'
+                    placeholder='123456'
+                    maxLength={6}
+                    pattern='[0-9]{6}'
+                    className='h-12 text-center font-mono text-2xl tracking-widest'
+                    value={code}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .replace(/\D/g, '')
+                        .slice(0, 6);
+                      setCode(value);
+                    }}
+                    required
+                    disabled={isLoading}
+                  />
+                  <p className='text-center text-xs text-gray-500'>
+                    Enter the 6-digit code from your authenticator app
+                  </p>
+                </div>
 
-          {error && (
-            <Alert
-              variant='destructive'
-              className='rounded-sm border-red-200 bg-red-50'
-            >
-              <AlertDescription className='text-sm text-red-700'>
-                {error || 'Invalid email or password'}
-              </AlertDescription>
-            </Alert>
+                <Button
+                  type='submit'
+                  className='h-12 w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+                  disabled={isLoading || code.length !== 6}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <Key className='mr-2 h-4 w-4' />
+                      Verify & Continue
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <div className='mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4'>
+                <h4 className='mb-2 text-sm font-medium text-gray-700'>
+                  🔒 Need help?
+                </h4>
+                <ul className='space-y-2 text-xs text-gray-600'>
+                  <li className='flex items-start gap-2'>
+                    <div className='mt-0.5 h-2 w-2 rounded-full bg-gray-400'></div>
+                    <span>
+                      Make sure the time on your device is synchronized
+                    </span>
+                  </li>
+                  <li className='flex items-start gap-2'>
+                    <div className='mt-0.5 h-2 w-2 rounded-full bg-gray-400'></div>
+                    <span>Check that you're entering the most recent code</span>
+                  </li>
+                  <li className='flex items-start gap-2'>
+                    <div className='mt-0.5 h-2 w-2 rounded-full bg-gray-400'></div>
+                    <span>If using SMS, check your text messages</span>
+                  </li>
+                </ul>
+              </div>
+            </>
           )}
+        </CardContent>
 
-          {loginSuccess && (
-            <Alert className='rounded-sm border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50'>
-              <AlertDescription className='text-sm text-green-800'>
-                <strong>Login successful!</strong> Redirecting to dashboard...
-              </AlertDescription>
-            </Alert>
-          )}
-
+        <CardFooter className='flex flex-col space-y-4'>
           <Button
-            type='submit'
-            className='h-12 w-full rounded-sm bg-gradient-to-r from-blue-600 to-purple-600 text-base shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl'
-            disabled={isLoading || loginSuccess}
+            variant='ghost'
+            onClick={() => router.push('/auth/login')}
+            className='w-full text-gray-600 hover:text-gray-900'
           >
-            {isLoading ? (
-              <>
-                <div className='mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent' />
-                Signing in...
-              </>
-            ) : (
-              <>
-                Sign In
-                <ArrowRight className='ml-2 h-5 w-5' />
-              </>
-            )}
+            Back to Login
           </Button>
-        </form>
-      </div>
-    </FormContainer>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
