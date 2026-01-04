@@ -262,7 +262,7 @@ export default function VerifyEmailPage() {
                 value={email}
                 readOnly
                 style={{ color: 'black' }}
-                className='h-12 rounded-sm border-gray-300 bg-gray-50 pl-12 text-base !text-black'
+                className='h-12 rounded-sm border-gray-300 bg-gray-50 pl-12 text-base !text-black text-slate-700'
               />
             </div>
             <p className='text-xs text-gray-500'>

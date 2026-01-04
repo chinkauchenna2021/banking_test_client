@@ -176,12 +176,15 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      // In your useAuth store, update verifyEmail:
       verifyEmail: async (token: string) => {
         set({ isLoading: true, error: null });
         try {
           const response = await apiClient.post<any>('/auth/verify-email', {
             token
           });
+
+          console.log('Verification response:', response);
 
           set({
             user: response.data?.user || null,
@@ -200,11 +203,13 @@ export const useAuthStore = create<AuthState>()(
 
           return response;
         } catch (error: any) {
+          console.error('Verification error:', error);
+          const errorMessage =
+            error.response?.data?.error ||
+            error.message ||
+            'Email verification failed';
           set({
-            error:
-              error.response?.data?.error ||
-              error.message ||
-              'Email verification failed',
+            error: errorMessage,
             isLoading: false
           });
           throw error;
