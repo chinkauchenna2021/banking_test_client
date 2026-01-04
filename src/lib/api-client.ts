@@ -1,4 +1,9 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig
+} from 'axios';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -6,12 +11,12 @@ class ApiClient {
 
   private constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
       timeout: 30000,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      withCredentials: true,
+      withCredentials: true
     });
 
     this.setupInterceptors();
@@ -80,16 +85,32 @@ class ApiClient {
     return this.client.get(url, config).then((response) => response.data);
   }
 
-  public post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    return this.client.post(url, data, config).then((response) => response.data);
+  public post<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    return this.client
+      .post(url, data, config)
+      .then((response) => response.data);
   }
 
-  public put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public put<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
     return this.client.put(url, data, config).then((response) => response.data);
   }
 
-  public patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    return this.client.patch(url, data, config).then((response) => response.data);
+  public patch<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
+    return this.client
+      .patch(url, data, config)
+      .then((response) => response.data);
   }
 
   public delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
@@ -104,18 +125,27 @@ class ApiClient {
   }
 
   public updateBankAccounts<T = any>(data: any): Promise<T> {
-    return this.put<T>('/company-information/bank-accounts', { bank_accounts: data });
+    return this.put<T>('/company-information/bank-accounts', {
+      bank_accounts: data
+    });
   }
 
   public updateCryptoWallets<T = any>(data: any): Promise<T> {
-    return this.put<T>('/company-information/crypto-wallets', { crypto_wallets: data });
+    return this.put<T>('/company-information/crypto-wallets', {
+      crypto_wallets: data
+    });
   }
 
   // =================================================================
   // Manual Deposits (User)
   // =================================================================
-  public getCompanyAccountDetails<T = any>(method: string, currency: string): Promise<T> {
-    return this.get<T>(`/manual-deposits/company-account/${method}/${currency}`);
+  public getCompanyAccountDetails<T = any>(
+    method: string,
+    currency: string
+  ): Promise<T> {
+    return this.get<T>(
+      `/manual-deposits/company-account/${method}/${currency}`
+    );
   }
 
   public createManualDeposit<T = any>(data: any): Promise<T> {
@@ -126,11 +156,14 @@ class ApiClient {
     return this.get<T>('/manual-deposits/history', { params });
   }
 
-  public uploadDepositProof<T = any>(depositId: string, formData: FormData): Promise<T> {
+  public uploadDepositProof<T = any>(
+    depositId: string,
+    formData: FormData
+  ): Promise<T> {
     return this.put<T>(`/manual-deposits/${depositId}/proof`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+        'Content-Type': 'multipart/form-data'
+      }
     });
   }
 
@@ -141,19 +174,31 @@ class ApiClient {
     return this.get<T>('/manual-deposits/admin/pending', { params });
   }
 
-  public confirmManualDeposit<T = any>(depositId: string, notes: string): Promise<T> {
-    return this.post<T>(`/manual-deposits/admin/${depositId}/confirm`, { notes });
+  public confirmManualDeposit<T = any>(
+    depositId: string,
+    notes: string
+  ): Promise<T> {
+    return this.post<T>(`/manual-deposits/admin/${depositId}/confirm`, {
+      notes
+    });
   }
 
-  public rejectManualDeposit<T = any>(depositId: string, reason: string): Promise<T> {
-    return this.post<T>(`/manual-deposits/admin/${depositId}/reject`, { reason });
+  public rejectManualDeposit<T = any>(
+    depositId: string,
+    reason: string
+  ): Promise<T> {
+    return this.post<T>(`/manual-deposits/admin/${depositId}/reject`, {
+      reason
+    });
   }
 
   // =================================================================
   // Transfers
   // =================================================================
   public validateRecipientAccount<T = any>(accountNumber: string): Promise<T> {
-    return this.get<T>('/transfer/validate-account', { params: { account_number: accountNumber } });
+    return this.get<T>('/transfer/validate-account', {
+      params: { account_number: accountNumber }
+    });
   }
 
   public getTransferLimits<T = any>(): Promise<T> {
@@ -173,7 +218,10 @@ class ApiClient {
     return this.get<T>('/transfers/scheduled', { params });
   }
 
-  public cancelTransfer<T = any>(transferId: string, reason: string): Promise<T> {
+  public cancelTransfer<T = any>(
+    transferId: string,
+    reason: string
+  ): Promise<T> {
     return this.post<T>(`/transfers/${transferId}/cancel`, { reason });
   }
 
@@ -185,7 +233,11 @@ class ApiClient {
     return this.post<T>(`/transfers/scheduled/${transferId}/cancel`);
   }
 
-  public getTransferFees<T = any>(amount: number, currency: string, type: string): Promise<T> {
+  public getTransferFees<T = any>(
+    amount: number,
+    currency: string,
+    type: string
+  ): Promise<T> {
     return this.get<T>('/transfer/fees', {
       params: { amount, currency, type }
     });
@@ -231,15 +283,21 @@ class ApiClient {
     return this.get<T>(`/loans/${loanId}/documents`);
   }
 
-  public uploadLoanDocument<T = any>(loanId: string, formData: FormData): Promise<T> {
+  public uploadLoanDocument<T = any>(
+    loanId: string,
+    formData: FormData
+  ): Promise<T> {
     return this.post<T>(`/loans/${loanId}/documents`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+        'Content-Type': 'multipart/form-data'
+      }
     });
   }
 
-  public cancelLoanApplication<T = any>(loanId: string, reason: string): Promise<T> {
+  public cancelLoanApplication<T = any>(
+    loanId: string,
+    reason: string
+  ): Promise<T> {
     return this.post<T>(`/loans/${loanId}/cancel`, { reason });
   }
 
@@ -248,7 +306,9 @@ class ApiClient {
   }
 
   public getPendingLoans<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/admin/loans', { params: { ...params, status: 'pending' } });
+    return this.get<T>('/admin/loans', {
+      params: { ...params, status: 'pending' }
+    });
   }
 
   public approveLoan<T = any>(loanId: string, notes: string): Promise<T> {
@@ -278,15 +338,24 @@ class ApiClient {
     return this.post<T>(`/admin/cards/${cardId}/approve`);
   }
 
-  public rejectCardRequest<T = any>(cardId: string, reason: string): Promise<T> {
+  public rejectCardRequest<T = any>(
+    cardId: string,
+    reason: string
+  ): Promise<T> {
     return this.post<T>(`/admin/cards/${cardId}/reject`, { reason });
   }
 
-  public getCardTransactions<T = any>(cardId: string, params: any = {}): Promise<T> {
+  public getCardTransactions<T = any>(
+    cardId: string,
+    params: any = {}
+  ): Promise<T> {
     return this.get<T>(`/cards/${cardId}/transactions`, { params });
   }
 
-  public getCardUsageSummary<T = any>(cardId: string, period: string = 'month'): Promise<T> {
+  public getCardUsageSummary<T = any>(
+    cardId: string,
+    period: string = 'month'
+  ): Promise<T> {
     return this.get<T>(`/cards/${cardId}/summary`, { params: { period } });
   }
 

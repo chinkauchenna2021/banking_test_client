@@ -12,10 +12,10 @@ import {
   Eye,
   EyeOff,
   Phone,
-  Calendar,
   ArrowRight,
   Check,
-  ChevronLeft
+  ChevronLeft,
+  Calendar as CalendarIcon // Renamed import
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { FormContainer } from '@/components/auth/FormContainer';
 import { format } from 'date-fns';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Calendar } from '@/components/ui/calendar'; // Your calendar component
 import {
   Popover,
   PopoverContent,
@@ -617,6 +617,8 @@ export default function RegisterPage() {
                 )}
               </div>
 
+              {/* In your RegisterPage component, update the PopoverTrigger button */}
+
               <div className='space-y-2'>
                 <Label className='text-sm font-medium text-gray-700'>
                   Date of Birth *
@@ -625,31 +627,34 @@ export default function RegisterPage() {
                   <PopoverTrigger asChild>
                     <Button
                       variant='outline'
-                      className={`h-11 w-full justify-start rounded-lg border-gray-700 text-left font-normal ${
+                      className={`h-11 w-full justify-start rounded-lg border-gray-300 text-left font-normal hover:border-gray-400 hover:bg-white ${
                         validationErrors.date_of_birth
                           ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                           : ''
-                      }`}
+                      } ${dateOfBirth ? 'text-gray-900' : 'text-gray-500'}`}
                     >
-                      <Calendar className='mr-2 h-4 w-4 text-black' />
+                      {/* Use CalendarIcon instead of Calendar */}
+                      <CalendarIcon className='mr-2 h-4 w-4 text-gray-500' />
                       {dateOfBirth ? (
-                        format(dateOfBirth, 'PPP')
+                        <span className='font-medium text-gray-900'>
+                          {format(dateOfBirth, 'PPP')}
+                        </span>
                       ) : (
-                        <span className='text-gray-700'>
+                        <span className='text-gray-500'>
                           Select your date of birth
                         </span>
                       )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className='w-auto border border-gray-200 bg-white p-0 shadow-lg'
+                    className='w-auto rounded-xl border border-gray-200 bg-white p-0 shadow-xl'
                     align='start'
                   >
-                    <CalendarComponent
+                    <Calendar
                       mode='single'
-                      className='text-gray-900'
                       selected={dateOfBirth}
-                      onSelect={(date) => {
+                      onSelect={(date: Date | undefined) => {
+                        // Explicitly type the parameter
                         setDateOfBirth(date);
                         if (validationErrors.date_of_birth) {
                           setValidationErrors({
@@ -670,7 +675,32 @@ export default function RegisterPage() {
                       captionLayout='dropdown-buttons'
                       fromYear={1920}
                       toYear={new Date().getFullYear() - 18}
+                      showOutsideDays={false}
+                      weekStartsOn={1}
+                      className='rounded-md'
+                      classNames={{
+                        day_selected:
+                          'bg-blue-600 text-white hover:bg-blue-700 hover:text-white',
+                        day_today:
+                          'bg-blue-50 text-blue-700 border border-blue-200'
+                      }}
                     />
+
+                    <div className='flex items-center justify-between border-t border-gray-100 p-3'>
+                      <div className='text-xs text-gray-500'>
+                        You must be at least 18 years old
+                      </div>
+                      {dateOfBirth && (
+                        <Button
+                          variant='ghost'
+                          size='sm'
+                          onClick={() => setDateOfBirth(undefined)}
+                          className='text-xs text-gray-600 hover:text-gray-900'
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
                   </PopoverContent>
                 </Popover>
                 {validationErrors.date_of_birth && (
@@ -678,11 +708,7 @@ export default function RegisterPage() {
                     {validationErrors.date_of_birth}
                   </p>
                 )}
-                <p className='text-xs text-gray-700'>
-                  You must be at least 18 years old to register
-                </p>
               </div>
-
               <div className='rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4'>
                 <h4 className='mb-2 text-sm font-semibold text-blue-800'>
                   Features Included:
