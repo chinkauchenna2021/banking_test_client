@@ -7,6 +7,16 @@ const baseConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'fonts.googleapis.com',
+        port: ''
+      },
+      {
+        protocol: 'https',
+        hostname: 'fonts.gstatic.com',
+        port: ''
+      },
+      {
+        protocol: 'https',
         hostname: 'api.slingacademy.com',
         port: ''
       },
@@ -21,6 +31,19 @@ const baseConfig: NextConfig = {
         port: ''
       }
     ]
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          }
+        ]
+      }
+    ];
   },
   transpilePackages: ['geist']
 };
