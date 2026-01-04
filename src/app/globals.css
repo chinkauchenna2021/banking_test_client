@@ -555,6 +555,40 @@
   margin-top: 1.5rem !important;
 }
 
+/* Add this to your global.css or component-specific CSS */
+.rdp-dropdown {
+  background-color: white !important;
+  color: #1f2937 !important; /* gray-900 */
+  border: 1px solid #d1d5db !important; /* gray-300 */
+  border-radius: 0.375rem !important; /* rounded-md */
+}
+
+.rdp-dropdown option {
+  background-color: white !important;
+  color: #1f2937 !important;
+}
+
+.rdp-caption_dropdowns {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rdp-dropdown_month,
+.rdp-dropdown_year {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background-color: white;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+}
+
+.rdp-dropdown_month:hover,
+.rdp-dropdown_year:hover {
+  border-color: #9ca3af;
+}
+
 /* Mobile optimizations */
 @media (max-width: 640px) {
   .big-title br {

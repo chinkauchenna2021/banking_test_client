@@ -634,10 +634,13 @@ export default function RegisterPage() {
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className='w-auto p-0' align='start'>
+                  <PopoverContent
+                    className='w-auto border border-gray-200 bg-white p-0 shadow-lg'
+                    align='start'
+                  >
                     <CalendarComponent
                       mode='single'
-                      className='text-black'
+                      className='text-gray-900'
                       selected={dateOfBirth}
                       onSelect={(date) => {
                         setDateOfBirth(date);
