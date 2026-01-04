@@ -12,6 +12,8 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import { Toaster as Toasters } from '@/components/ui/toaster';
 import './globals.css';
 import './theme.css';
+import { useAuthDebug } from '@/hooks/useAuthDebug';
+import DebugAuth from '@/components/DebugAuth';
 
 const META_THEME_COLORS = {
   light: '#ffffff',
@@ -32,6 +34,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useAuthDebug(); // for monitoring auth state
   const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isScaled = activeThemeValue?.endsWith('-scaled');
@@ -65,6 +68,7 @@ export default async function RootLayout({
               <Toaster />
               <AuthProvider>
                 <StoreProvider>
+                  <DebugAuth />
                   {children}
                   <Toasters />
                   <Toaster />

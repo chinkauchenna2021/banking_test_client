@@ -13,20 +13,20 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div>
       <div>
-        {/* <link rel="apple-touch-icon" sizes="180x180" href="http://localhost:3000/assets/images/favicons/apple-touch-icon.png" /> */}
+        {/* <link rel="apple-touch-icon" sizes="180x180" href="https://www.fidelityoffshoreb.com/assets/images/favicons/apple-touch-icon.png" /> */}
         <link
           rel='icon'
           type='image/png'
           sizes='32x32'
-          href='http://localhost:3000/assets/images/favicons/favicon-32x32.png'
+          href='https://www.fidelityoffshoreb.com/assets/images/favicons/favicon-32x32.png'
         />
         <link
           rel='icon'
           type='image/png'
           sizes='16x16'
-          href='http://localhost:3000/assets/images/favicons/favicon-16x16.png'
+          href='https://www.fidelityoffshoreb.com/assets/images/favicons/favicon-16x16.png'
         />
-        {/* <link rel="manifest" href="http://localhost:3000/assets/images/favicons/site.webmanifest" /> */}
+        {/* <link rel="manifest" href="https://www.fidelityoffshoreb.com/assets/images/favicons/site.webmanifest" /> */}
         <meta name='description' content='fidelity Offshore Bank' />
         <link
           href='https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap'
@@ -149,20 +149,20 @@ export default function Layout({ children }: LayoutProps) {
           src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js'
           strategy='afterInteractive'
         />
-        {/* <Script
-          src='http://localhost:3000/assets/vendors/jquery/jquery-3.6.0.min.js'
-          strategy='afterInteractive'
-        /> */}
         <Script
-          src='http://localhost:3000/assets/vendors/bootstrap/js/bootstrap.bundle.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/jquery/jquery-3.6.0.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/bxslider/jquery.bxslider.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/bootstrap/js/bootstrap.bundle.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/circleType/jquery.circleType.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/bxslider/jquery.bxslider.min.js'
+          strategy='afterInteractive'
+        />
+        <Script
+          src='https://www.fidelityoffshoreb.com/assets/vendors/circleType/jquery.circleType.js'
           strategy='afterInteractive'
         />
         <Script
@@ -170,47 +170,47 @@ export default function Layout({ children }: LayoutProps) {
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/isotope/isotope.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/isotope/isotope.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/jquery-ajaxchimp/jquery.ajaxchimp.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/jquery-ajaxchimp/jquery.ajaxchimp.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/jquery-appear/jquery.appear.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/jquery-appear/jquery.appear.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/jquery-magnific-popup/jquery.magnific-popup.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/jquery-magnific-popup/jquery.magnific-popup.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/jquery-migrate/jquery-migrate.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/jquery-migrate/jquery-migrate.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/jquery-ui/jquery-ui.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/jquery-ui/jquery-ui.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/jquery-validate/jquery.validate.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/jquery-validate/jquery.validate.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/nice-select/jquery.nice-select.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/nice-select/jquery.nice-select.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/odometer/odometer.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/odometer/odometer.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/owl-carousel/owl.carousel.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/owl-carousel/owl.carousel.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/swiper/swiper.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/swiper/swiper.min.js'
           strategy='afterInteractive'
         />
         <Script
@@ -218,27 +218,27 @@ export default function Layout({ children }: LayoutProps) {
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/wnumb/wNumb.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/wnumb/wNumb.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/wow/wow.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/wow/wow.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/extra-scripts/jquery.paroller.min.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/extra-scripts/jquery.paroller.min.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/language-switcher/jquery.polyglot.language.switcher.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/language-switcher/jquery.polyglot.language.switcher.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/vendors/aos/aos.js'
+          src='https://www.fidelityoffshoreb.com/assets/vendors/aos/aos.js'
           strategy='afterInteractive'
         />
         <Script
-          src='http://localhost:3000/assets/js/custom.js'
+          src='https://www.fidelityoffshoreb.com/assets/js/custom.js'
           strategy='afterInteractive'
         />
       </div>

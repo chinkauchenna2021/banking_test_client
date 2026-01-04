@@ -4,14 +4,23 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig
 } from 'axios';
+import { useAuthStore } from '../stores/auth.store';
 
 class ApiClient {
   private client: AxiosInstance;
   private static instance: ApiClient;
 
+  // Base URLs for different environments
+  private get baseURL(): string {
+    if (typeof window === 'undefined') {
+      return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    }
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  }
+
   private constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+      baseURL: this.baseURL,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json'
@@ -33,9 +42,19 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        // Get token from Zustand store
+        const { accessToken } = useAuthStore.getState();
+
+        if (accessToken) {
+          config.headers.Authorization = `Bearer ${accessToken}`;
+        } else {
+          // Fallback to localStorage
+          const token = localStorage.getItem('access_token');
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+            // Sync to Zustand
+            useAuthStore.setState({ accessToken: token });
+          }
         }
         return config;
       },
@@ -46,7 +65,40 @@ class ApiClient {
 
     // Response interceptor
     this.client.interceptors.response.use(
-      (response: AxiosResponse) => response,
+      (response: AxiosResponse) => {
+        // Check if response contains new tokens and update store
+        if (response.data?.access_token || response.data?.refresh_token) {
+          const { access_token, refresh_token } = response.data;
+
+          if (access_token) {
+            localStorage.setItem('access_token', access_token);
+            useAuthStore.setState({ accessToken: access_token });
+          }
+          if (refresh_token) {
+            localStorage.setItem('refresh_token', refresh_token);
+            useAuthStore.setState({ refreshToken: refresh_token });
+          }
+        }
+
+        // Also check in response.data.data structure
+        if (
+          response.data?.data?.access_token ||
+          response.data?.data?.refresh_token
+        ) {
+          const { access_token, refresh_token } = response.data.data;
+
+          if (access_token) {
+            localStorage.setItem('access_token', access_token);
+            useAuthStore.setState({ accessToken: access_token });
+          }
+          if (refresh_token) {
+            localStorage.setItem('refresh_token', refresh_token);
+            useAuthStore.setState({ refreshToken: refresh_token });
+          }
+        }
+
+        return response;
+      },
       async (error) => {
         const originalRequest = error.config;
 
@@ -54,25 +106,40 @@ class ApiClient {
           originalRequest._retry = true;
 
           try {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
+            const { refreshToken } = useAuthStore.getState();
+            const refreshTokenToUse =
+              refreshToken || localStorage.getItem('refresh_token');
+
+            if (refreshTokenToUse) {
               const { data } = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/refresh-token`,
-                { refresh_token: refreshToken }
+                `${this.baseURL}/auth/refresh-token`,
+                { refresh_token: refreshTokenToUse }
               );
 
+              // Update both localStorage and Zustand
               localStorage.setItem('access_token', data.access_token);
               localStorage.setItem('refresh_token', data.refresh_token);
+
+              useAuthStore.setState({
+                accessToken: data.access_token,
+                refreshToken: data.refresh_token
+              });
 
               originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
               return this.client(originalRequest);
             }
           } catch (refreshError) {
-            // Clear tokens and redirect to login
+            console.error('Token refresh failed:', refreshError);
+            // Clear all auth data
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+            localStorage.removeItem('auth-storage');
+            useAuthStore.getState().logout();
+
+            // Only redirect if we're on the client
+            if (typeof window !== 'undefined') {
+              window.location.href = '/auth/login';
+            }
           }
         }
 
@@ -81,6 +148,9 @@ class ApiClient {
     );
   }
 
+  // =================================================================
+  // HTTP Methods
+  // =================================================================
   public get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     return this.client.get(url, config).then((response) => response.data);
   }
@@ -115,6 +185,81 @@ class ApiClient {
 
   public delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     return this.client.delete(url, config).then((response) => response.data);
+  }
+
+  // =================================================================
+  // Auth-specific methods with token handling
+  // =================================================================
+  public async login(email: string, password: string): Promise<any> {
+    try {
+      const response = await this.post('/auth/login', { email, password });
+
+      // Handle 2FA response
+      if (response.requires_two_factor) {
+        return response;
+      }
+
+      // Update tokens if present
+      if (response.access_token && response.refresh_token) {
+        this.updateTokens(response.access_token, response.refresh_token);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  }
+
+  public async verifyEmail(token: string): Promise<any> {
+    try {
+      const response = await this.post('/auth/verify-email', { token });
+
+      // Update tokens if present
+      if (response.data?.access_token && response.data?.refresh_token) {
+        this.updateTokens(
+          response.data.access_token,
+          response.data.refresh_token
+        );
+      } else if (response.access_token && response.refresh_token) {
+        this.updateTokens(response.access_token, response.refresh_token);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Verify email error:', error);
+      throw error;
+    }
+  }
+
+  public async refreshToken(refreshToken: string): Promise<any> {
+    try {
+      const response = await this.post('/auth/refresh-token', {
+        refresh_token: refreshToken
+      });
+
+      if (response.access_token && response.refresh_token) {
+        this.updateTokens(response.access_token, response.refresh_token);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Refresh token error:', error);
+      throw error;
+    }
+  }
+
+  private updateTokens(accessToken: string, refreshToken: string): void {
+    // Update localStorage
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+
+    // Update Zustand store
+    useAuthStore.setState({
+      accessToken,
+      refreshToken,
+      isAuthenticated: true
+    });
   }
 
   // =================================================================
@@ -213,7 +358,6 @@ class ApiClient {
     return this.get<T>('/transfers', { params });
   }
 
-  // NEW METHODS ADDED HERE
   public getScheduledTransfers<T = any>(params: any = {}): Promise<T> {
     return this.get<T>('/transfers/scheduled', { params });
   }
@@ -258,7 +402,6 @@ class ApiClient {
     return this.get<T>('/loans', { params });
   }
 
-  // ADDED MISSING LOAN METHODS
   public checkEligibility<T = any>(params: any = {}): Promise<T> {
     return this.get<T>('/loans/eligibility', { params });
   }
@@ -393,6 +536,278 @@ class ApiClient {
 
   public generateVirtualCard<T = any>(accountId: bigint): Promise<T> {
     return this.post<T>(`/accounts/${accountId}/virtual-card`);
+  }
+
+  // =================================================================
+  // Additional Auth Methods
+  // =================================================================
+  public async register(userData: any): Promise<any> {
+    try {
+      const response = await this.post('/auth/register', userData);
+      return response;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  }
+
+  public async forgotPassword(email: string): Promise<any> {
+    try {
+      const response = await this.post('/auth/forgot-password', { email });
+      return response;
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
+  }
+
+  public async resetPassword(token: string, newPassword: string): Promise<any> {
+    try {
+      const response = await this.post('/auth/reset-password', {
+        token,
+        new_password: newPassword
+      });
+      return response;
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
+  }
+
+  public async changePassword(data: {
+    current_password: string;
+    new_password: string;
+  }): Promise<any> {
+    try {
+      const response = await this.post('/auth/change-password', data);
+      return response;
+    } catch (error) {
+      console.error('Change password error:', error);
+      throw error;
+    }
+  }
+
+  public async verifyTwoFactor(tempToken: string, code: string): Promise<any> {
+    try {
+      const response = await this.post('/auth/verify-2fa', {
+        temp_token: tempToken,
+        code
+      });
+
+      // Update tokens if present
+      if (response.access_token && response.refresh_token) {
+        this.updateTokens(response.access_token, response.refresh_token);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('2FA verification error:', error);
+      throw error;
+    }
+  }
+
+  public async logout(): Promise<any> {
+    try {
+      const response = await this.post('/auth/logout');
+      return response;
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    } finally {
+      // Always clear local data
+      this.clearAuthData();
+    }
+  }
+
+  public async getProfile<T = any>(): Promise<T> {
+    return this.get<T>('/auth/profile');
+  }
+
+  public async resendVerification(email: string): Promise<any> {
+    try {
+      const response = await this.post('/auth/resend-verification', { email });
+      return response;
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      throw error;
+    }
+  }
+
+  // =================================================================
+  // Utility Methods
+  // =================================================================
+  public clearAuthData(): void {
+    // Clear localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('auth-storage');
+    localStorage.removeItem('pending_verification_email');
+
+    // Clear Zustand state
+    useAuthStore.setState({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false
+    });
+  }
+
+  public isAuthenticated(): boolean {
+    const { accessToken, isAuthenticated } = useAuthStore.getState();
+    return (
+      !!(accessToken || localStorage.getItem('access_token')) && isAuthenticated
+    );
+  }
+
+  public getCurrentToken(): string | null {
+    const { accessToken } = useAuthStore.getState();
+    return accessToken || localStorage.getItem('access_token');
+  }
+
+  // =================================================================
+  // Account Management
+  // =================================================================
+  public getUserAccounts<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/accounts', { params });
+  }
+
+  public getAccountDetails<T = any>(accountId: string): Promise<T> {
+    return this.get<T>(`/accounts/${accountId}`);
+  }
+
+  public createAccount<T = any>(data: any): Promise<T> {
+    return this.post<T>('/accounts', data);
+  }
+
+  public updateAccount<T = any>(accountId: string, data: any): Promise<T> {
+    return this.put<T>(`/accounts/${accountId}`, data);
+  }
+
+  public getAccountTransactions<T = any>(
+    accountId: string,
+    params: any = {}
+  ): Promise<T> {
+    return this.get<T>(`/accounts/${accountId}/transactions`, { params });
+  }
+
+  // =================================================================
+  // Transactions
+  // =================================================================
+  public getTransactionHistory<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/transactions', { params });
+  }
+
+  public getTransactionDetails<T = any>(transactionId: string): Promise<T> {
+    return this.get<T>(`/transactions/${transactionId}`);
+  }
+
+  public exportTransactions<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/transactions/export', {
+      params,
+      responseType: 'blob'
+    });
+  }
+
+  // =================================================================
+  // User Management (Admin)
+  // =================================================================
+  public getUsers<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/admin/users', { params });
+  }
+
+  public getUserDetails<T = any>(userId: string): Promise<T> {
+    return this.get<T>(`/admin/users/${userId}`);
+  }
+
+  public updateUserStatus<T = any>(userId: string, status: string): Promise<T> {
+    return this.put<T>(`/admin/users/${userId}/status`, { status });
+  }
+
+  public updateUserRole<T = any>(userId: string, role: string): Promise<T> {
+    return this.put<T>(`/admin/users/${userId}/role`, { role });
+  }
+
+  // =================================================================
+  // Settings
+  // =================================================================
+  public getUserSettings<T = any>(): Promise<T> {
+    return this.get<T>('/settings');
+  }
+
+  public updateUserSettings<T = any>(data: any): Promise<T> {
+    return this.put<T>('/settings', data);
+  }
+
+  public updateNotificationSettings<T = any>(data: any): Promise<T> {
+    return this.put<T>('/settings/notifications', data);
+  }
+
+  public updateSecuritySettings<T = any>(data: any): Promise<T> {
+    return this.put<T>('/settings/security', data);
+  }
+
+  // =================================================================
+  // Support/Contact
+  // =================================================================
+  public submitContactForm<T = any>(data: any): Promise<T> {
+    return this.post<T>('/contact', data);
+  }
+
+  public getSupportTickets<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/support/tickets', { params });
+  }
+
+  public createSupportTicket<T = any>(data: any): Promise<T> {
+    return this.post<T>('/support/tickets', data);
+  }
+
+  public getTicketDetails<T = any>(ticketId: string): Promise<T> {
+    return this.get<T>(`/support/tickets/${ticketId}`);
+  }
+
+  public addTicketReply<T = any>(
+    ticketId: string,
+    message: string
+  ): Promise<T> {
+    return this.post<T>(`/support/tickets/${ticketId}/reply`, { message });
+  }
+
+  // =================================================================
+  // Voice Balance Requests
+  // =================================================================
+  public requestVoiceBalance<T = any>(data: any): Promise<T> {
+    return this.post<T>('/voice-balance', data);
+  }
+
+  public getVoiceBalanceHistory<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/voice-balance/history', { params });
+  }
+
+  // =================================================================
+  // File Uploads
+  // =================================================================
+  public uploadFile<T = any>(formData: FormData): Promise<T> {
+    return this.post<T>('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  }
+
+  public uploadProfileImage<T = any>(formData: FormData): Promise<T> {
+    return this.post<T>('/upload/profile', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  }
+
+  public uploadDocument<T = any>(formData: FormData): Promise<T> {
+    return this.post<T>('/upload/document', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   }
 }
 
