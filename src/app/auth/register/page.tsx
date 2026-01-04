@@ -584,10 +584,10 @@ export default function RegisterPage() {
                   </SelectTrigger>
                   <SelectContent className='bg-white'>
                     <SelectItem
-                      value='personal'
+                      value='savings'
                       className='cursor-pointer text-gray-900 hover:bg-gray-100'
                     >
-                      Personal Banking
+                      Savings Banking
                     </SelectItem>
                     <SelectItem
                       value='business'
@@ -600,6 +600,13 @@ export default function RegisterPage() {
                       className='cursor-pointer text-gray-900 hover:bg-gray-100'
                     >
                       Premium Banking
+                    </SelectItem>
+
+                    <SelectItem
+                      value='current'
+                      className='cursor-pointer text-gray-900 hover:bg-gray-100'
+                    >
+                      Current Banking
                     </SelectItem>
                   </SelectContent>
                 </Select>
