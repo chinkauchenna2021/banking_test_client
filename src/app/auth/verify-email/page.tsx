@@ -9,14 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import {
   Mail,
   CheckCircle,
   XCircle,
@@ -27,6 +19,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { FormContainer } from '@/components/auth/FormContainer';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -157,227 +150,249 @@ export default function VerifyEmailPage() {
     }
   };
 
-  return (
-    <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-4'>
-      <Card className='w-full max-w-md border-gray-200 shadow-xl'>
-        <CardHeader className='space-y-1'>
-          <div className='mb-4 flex justify-center'>
-            <div className='flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-purple-100'>
-              <Shield className='h-8 w-8 text-blue-600' />
+  // Success state content
+  if (isVerified) {
+    return (
+      <FormContainer
+        title='Account Activated!'
+        description='Your account has been successfully activated.'
+        backText='Back to Login'
+        backLink='/auth/login'
+        footer={
+          <div className='space-y-2 text-center text-xs text-gray-500'>
+            <div className='flex items-center justify-center gap-2'>
+              <div className='h-1.5 w-1.5 animate-pulse rounded-full bg-green-500' />
+              <span>Account Active • Ready to Login</span>
             </div>
           </div>
-          <CardTitle className='text-center text-2xl font-bold text-gray-900'>
-            {isVerified ? 'Account Activated!' : 'Verify Your Email'}
-          </CardTitle>
-          <CardDescription className='text-center text-gray-600'>
-            {isVerified
-              ? 'Your account has been successfully activated. You can now access all features.'
-              : 'Enter the verification token sent to your email address to activate your account.'}
-          </CardDescription>
-        </CardHeader>
+        }
+      >
+        <div className='space-y-6 text-center'>
+          <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-100 to-emerald-100'>
+            <CheckCircle className='h-10 w-10 text-green-600' />
+          </div>
 
-        <CardContent>
-          {isVerified ? (
-            <div className='space-y-6 text-center'>
-              <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-100 to-emerald-100'>
-                <CheckCircle className='h-10 w-10 text-green-600' />
-              </div>
-              <Alert className='border-green-200 bg-green-50'>
-                <AlertDescription className='text-green-800'>
-                  <p className='font-semibold'>
-                    🎉 Account Activated Successfully!
-                  </p>
-                  <p className='mt-1 text-sm'>
-                    Your email address has been verified and your account is now
-                    active. Redirecting to dashboard...
-                  </p>
-                </AlertDescription>
-              </Alert>
-              <div className='pt-4'>
-                <Button
-                  onClick={() => router.push('/dashboard')}
-                  className='w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
-                >
-                  Go to Dashboard
-                  <ArrowRight className='ml-2 h-4 w-4' />
-                </Button>
-              </div>
+          <Alert className='rounded-sm border-green-200 bg-green-50 text-left'>
+            <AlertDescription className='text-green-800'>
+              <p className='font-semibold'>
+                🎉 Account Activated Successfully!
+              </p>
+              <p className='mt-1 text-sm'>
+                Your email address has been verified and your account is now
+                active. Redirecting to dashboard...
+              </p>
+            </AlertDescription>
+          </Alert>
+
+          <Button
+            onClick={() => router.push('/dashboard')}
+            className='h-12 w-full rounded-sm bg-gradient-to-r from-green-600 to-emerald-600 text-base shadow-lg transition-all duration-300 hover:from-green-700 hover:to-emerald-700 hover:shadow-xl'
+          >
+            Go to Dashboard
+            <ArrowRight className='ml-2 h-5 w-5' />
+          </Button>
+        </div>
+      </FormContainer>
+    );
+  }
+
+  // Verification form state
+  return (
+    <FormContainer
+      title='Verify Your Email'
+      description='Enter the verification token sent to your email address'
+      backText='Back to Login'
+      backLink='/auth/login'
+      footer={
+        <div className='space-y-2 text-center text-xs text-gray-500'>
+          <div className='flex items-center justify-center gap-2'>
+            <div className='h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500' />
+            <span>Secure Verification • 256-bit Encryption</span>
+          </div>
+        </div>
+      }
+    >
+      <div className='space-y-6'>
+        {/* Important Notice */}
+        <Alert className='rounded-sm border-amber-200 bg-amber-50'>
+          <AlertTriangle className='h-4 w-4 text-amber-600' />
+          <AlertDescription className='text-sm text-amber-800'>
+            <strong>Important:</strong> You must verify your email before you
+            can log in and use your account.
+          </AlertDescription>
+        </Alert>
+
+        {/* Email Sent Success */}
+        {emailSent && (
+          <Alert className='rounded-sm border-blue-200 bg-blue-50'>
+            <AlertDescription className='text-sm text-blue-800'>
+              <CheckCircle className='mr-2 inline h-4 w-4' />A new verification
+              email has been sent. Please check your inbox.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Error Alert */}
+        {error && (
+          <Alert
+            variant='destructive'
+            className='rounded-sm border-red-200 bg-red-50'
+          >
+            <XCircle className='h-4 w-4' />
+            <AlertDescription className='text-sm text-red-700'>
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Verification Form */}
+        <form onSubmit={handleManualVerify} className='space-y-6'>
+          <div className='space-y-4'>
+            <Label
+              htmlFor='email'
+              className='text-sm font-medium text-gray-700'
+            >
+              Email Address
+            </Label>
+            <div className='group relative'>
+              <Mail className='absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 transform text-gray-400' />
+              <Input
+                id='email'
+                type='email'
+                value={email}
+                readOnly
+                style={{ color: 'black' }}
+                className='h-12 rounded-sm border-gray-300 bg-gray-50 pl-12 text-base !text-black'
+              />
             </div>
-          ) : (
-            <>
-              <Alert className='mb-6 border-amber-200 bg-amber-50'>
-                <AlertTriangle className='h-4 w-4 text-amber-600' />
-                <AlertDescription className='text-amber-800'>
-                  <strong>Important:</strong> You must verify your email before
-                  you can log in and use your account.
-                </AlertDescription>
-              </Alert>
-
-              {emailSent && (
-                <Alert className='mb-6 border-blue-200 bg-blue-50'>
-                  <AlertDescription className='text-blue-800'>
-                    <CheckCircle className='mr-2 inline h-4 w-4' />A new
-                    verification email has been sent. Please check your inbox.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {error && (
-                <Alert variant='destructive' className='mb-6'>
-                  <XCircle className='h-4 w-4' />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <form onSubmit={handleManualVerify} className='space-y-6'>
-                <div className='space-y-2'>
-                  <Label
-                    htmlFor='email'
-                    className='text-sm font-medium text-gray-700'
-                  >
-                    Email Address
-                  </Label>
-                  <Input
-                    id='email'
-                    type='email'
-                    value={email}
-                    readOnly
-                    className='h-11 rounded-lg border-gray-300 bg-gray-50'
-                  />
-                  <p className='text-xs text-gray-500'>
-                    Verification link was sent to this email address
-                  </p>
-                </div>
-
-                <div className='space-y-2'>
-                  <Label
-                    htmlFor='token'
-                    className='text-sm font-medium text-gray-700'
-                  >
-                    Verification Token *
-                  </Label>
-                  <Input
-                    id='token'
-                    type='text'
-                    placeholder='Enter the token from your email'
-                    className='h-11 rounded-lg border-gray-300 font-mono'
-                    value={verificationToken}
-                    onChange={(e) => setVerificationToken(e.target.value)}
-                    required
-                    disabled={isVerifying || isResending}
-                  />
-                  <p className='text-xs text-gray-500'>
-                    Check your email for the verification token
-                  </p>
-                </div>
-
-                <Button
-                  type='submit'
-                  className='h-11 w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
-                  disabled={isVerifying || isResending}
-                >
-                  {isVerifying ? (
-                    <>
-                      <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
-                      Activating Account...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className='mr-2 h-4 w-4' />
-                      Activate Account
-                    </>
-                  )}
-                </Button>
-              </form>
-
-              <div className='relative my-6'>
-                <div className='absolute inset-0 flex items-center'>
-                  <div className='w-full border-t border-gray-300'></div>
-                </div>
-                <div className='relative flex justify-center text-sm'>
-                  <span className='bg-white px-2 text-gray-500'>
-                    Need a new token?
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                type='button'
-                variant='outline'
-                className='h-11 w-full rounded-lg border-gray-300'
-                onClick={handleResendVerification}
-                disabled={
-                  !email.trim() || isResending || countdown > 0 || isVerifying
-                }
-              >
-                {isResending ? (
-                  <>
-                    <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
-                    Sending...
-                  </>
-                ) : countdown > 0 ? (
-                  <>
-                    <Timer className='mr-2 h-4 w-4' />
-                    Resend available in {countdown}s
-                  </>
-                ) : (
-                  <>
-                    <Mail className='mr-2 h-4 w-4' />
-                    Resend Verification Email
-                  </>
-                )}
-              </Button>
-
-              <div className='mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4'>
-                <h4 className='mb-2 text-sm font-medium text-gray-700'>
-                  📧 Didn't receive the email?
-                </h4>
-                <ul className='space-y-2 text-xs text-gray-600'>
-                  <li className='flex items-start gap-2'>
-                    <div className='mt-0.5 h-2 w-2 rounded-full bg-gray-400'></div>
-                    <span>Check your spam or junk folder</span>
-                  </li>
-                  <li className='flex items-start gap-2'>
-                    <div className='mt-0.5 h-2 w-2 rounded-full bg-gray-400'></div>
-                    <span>Make sure you entered the correct email address</span>
-                  </li>
-                  <li className='flex items-start gap-2'>
-                    <div className='mt-0.5 h-2 w-2 rounded-full bg-gray-400'></div>
-                    <span>
-                      Wait a few minutes - emails can sometimes be delayed
-                    </span>
-                  </li>
-                  <li className='flex items-start gap-2'>
-                    <div className='mt-0.5 h-2 w-2 rounded-full bg-gray-400'></div>
-                    <span>Click "Resend Verification Email" above</span>
-                  </li>
-                </ul>
-              </div>
-            </>
-          )}
-        </CardContent>
-
-        <CardFooter className='flex flex-col space-y-4'>
-          <div className='text-center text-xs text-gray-500'>
-            <p>
-              Having trouble?{' '}
-              <a
-                href='mailto:support@example.com'
-                className='font-medium text-blue-600 hover:underline'
-              >
-                Contact support
-              </a>
+            <p className='text-xs text-gray-500'>
+              Verification link was sent to this email address
             </p>
           </div>
+
+          <div className='space-y-4'>
+            <Label
+              htmlFor='token'
+              className='text-sm font-medium text-gray-700'
+            >
+              Verification Token *
+            </Label>
+            <div className='group relative'>
+              <Shield className='absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 transform text-gray-400 transition-colors group-focus-within:text-blue-500' />
+              <Input
+                id='token'
+                type='text'
+                placeholder='Enter the token from your email'
+                style={{ color: 'black' }}
+                className='h-12 rounded-sm border-gray-300 pl-12 font-mono text-base !text-black transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                value={verificationToken}
+                onChange={(e) => setVerificationToken(e.target.value)}
+                required
+                disabled={isVerifying || isResending}
+              />
+            </div>
+            <p className='text-xs text-gray-500'>
+              Check your email for the verification token
+            </p>
+          </div>
+
           <Button
-            variant='ghost'
-            onClick={() => router.push('/auth/login')}
-            className='w-full text-gray-600 hover:text-gray-900'
+            type='submit'
+            className='h-12 w-full rounded-sm bg-gradient-to-r from-blue-600 to-purple-600 text-base shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl'
+            disabled={isVerifying || isResending}
           >
-            Back to Login
+            {isVerifying ? (
+              <>
+                <div className='mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent' />
+                Activating Account...
+              </>
+            ) : (
+              <>
+                <CheckCircle className='mr-2 h-5 w-5' />
+                Activate Account
+              </>
+            )}
           </Button>
-        </CardFooter>
-      </Card>
-    </div>
+        </form>
+
+        {/* Divider */}
+        <div className='relative'>
+          <div className='absolute inset-0 flex items-center'>
+            <div className='w-full border-t border-gray-200' />
+          </div>
+          <div className='relative flex justify-center text-xs'>
+            <span className='bg-white px-3 text-gray-500'>
+              Need a new token?
+            </span>
+          </div>
+        </div>
+
+        {/* Resend Button */}
+        <Button
+          type='button'
+          variant='outline'
+          className='h-12 w-full rounded-sm border-gray-300 text-base transition-all hover:border-blue-500 hover:bg-blue-50'
+          onClick={handleResendVerification}
+          disabled={
+            !email.trim() || isResending || countdown > 0 || isVerifying
+          }
+        >
+          {isResending ? (
+            <>
+              <RefreshCw className='mr-2 h-5 w-5 animate-spin' />
+              Sending...
+            </>
+          ) : countdown > 0 ? (
+            <>
+              <Timer className='mr-2 h-5 w-5' />
+              Resend available in {countdown}s
+            </>
+          ) : (
+            <>
+              <Mail className='mr-2 h-5 w-5' />
+              Resend Verification Email
+            </>
+          )}
+        </Button>
+
+        {/* Help Section */}
+        <div className='rounded-sm border border-gray-200 bg-gray-50 p-4'>
+          <h4 className='mb-3 text-sm font-semibold text-gray-800'>
+            📧 Didn't receive the email?
+          </h4>
+          <ul className='space-y-2 text-xs text-gray-600'>
+            <li className='flex items-start gap-2'>
+              <div className='mt-1 h-1.5 w-1.5 rounded-full bg-gray-400'></div>
+              <span>Check your spam or junk folder</span>
+            </li>
+            <li className='flex items-start gap-2'>
+              <div className='mt-1 h-1.5 w-1.5 rounded-full bg-gray-400'></div>
+              <span>Make sure you entered the correct email address</span>
+            </li>
+            <li className='flex items-start gap-2'>
+              <div className='mt-1 h-1.5 w-1.5 rounded-full bg-gray-400'></div>
+              <span>Wait a few minutes - emails can sometimes be delayed</span>
+            </li>
+            <li className='flex items-start gap-2'>
+              <div className='mt-1 h-1.5 w-1.5 rounded-full bg-gray-400'></div>
+              <span>Click "Resend Verification Email" above</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Support Link */}
+        <div className='text-center text-xs text-gray-500'>
+          <p>
+            Having trouble?{' '}
+            <a
+              href='mailto:support@example.com'
+              className='font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline'
+            >
+              Contact support
+            </a>
+          </p>
+        </div>
+      </div>
+    </FormContainer>
   );
 }
