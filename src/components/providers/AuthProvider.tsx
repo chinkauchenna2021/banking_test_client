@@ -11,6 +11,7 @@ import { useAuthStore, User } from '@/stores/auth.store';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import TokenSync from '@/lib/token-sync';
 
 interface AuthContextType {
   user: User | null;
@@ -66,6 +67,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    // Sync tokens from localStorage on app initialization
+    TokenSync.syncFromLocalStorage();
+  }, []);
 
   useEffect(() => {
     if (!isLoading && user) {

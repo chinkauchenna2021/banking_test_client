@@ -59,10 +59,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await apiClient.post<any>('/auth/login', {
-            email,
-            password
-          });
+          const response = await apiClient.login(email, password);
 
           if (response.requires_two_factor) {
             set({
@@ -98,99 +95,10 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (userData: any) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await apiClient.post<any>(
-            '/auth/register',
-            userData
-          );
-
-          set({
-            user: response.data?.user || null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null
-          });
-
-          if (response.data?.requires_verification) {
-            localStorage.setItem(
-              'pending_verification_email',
-              response.data.user.email
-            );
-          }
-
-          return response;
-        } catch (error: any) {
-          set({
-            error:
-              error.response?.data?.error ||
-              error.message ||
-              'Registration failed',
-            isLoading: false
-          });
-          throw error;
-        }
-      },
-
-      logout: async () => {
-        set({ isLoading: true });
-        try {
-          await apiClient.post('/auth/logout');
-        } catch (error) {
-          console.log('Logout API error:', error);
-        } finally {
-          // Clear Zustand state
-          set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null
-          });
-
-          // Clear localStorage manually
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          localStorage.removeItem('pending_verification_email');
-
-          // Clear Zustand persisted storage
-          localStorage.removeItem('auth-storage');
-        }
-      },
-
-      refreshAccessToken: async () => {
-        const { refreshToken } = get();
-        if (!refreshToken) return;
-
-        try {
-          const response = await apiClient.post<{
-            access_token: string;
-            refresh_token: string;
-          }>('/auth/refresh-token', { refresh_token: refreshToken });
-
-          set({
-            accessToken: response.access_token,
-            refreshToken: response.refresh_token
-          });
-
-          localStorage.setItem('access_token', response.access_token);
-          localStorage.setItem('refresh_token', response.refresh_token);
-        } catch (error) {
-          get().logout();
-        }
-      },
-
-      // In your useAuth store, update verifyEmail:
       verifyEmail: async (token: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await apiClient.post<any>('/auth/verify-email', {
-            token
-          });
+          const response = await apiClient.verifyEmail(token);
 
           console.log('Verification response:', response);
 
@@ -231,6 +139,92 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           });
           throw error;
+        }
+      },
+
+      logout: async () => {
+        set({ isLoading: true });
+        try {
+          await apiClient.logout();
+        } catch (error) {
+          console.log('Logout API error:', error);
+        } finally {
+          // Clear Zustand state
+          set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+          });
+
+          // Clear localStorage manually
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('pending_verification_email');
+
+          // Clear Zustand persisted storage
+          localStorage.removeItem('auth-storage');
+        }
+      },
+
+      register: async (userData: any) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await apiClient.post<any>(
+            '/auth/register',
+            userData
+          );
+
+          set({
+            user: response.data?.user || null,
+            accessToken: null,
+            refreshToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+          });
+
+          if (response.data?.requires_verification) {
+            localStorage.setItem(
+              'pending_verification_email',
+              response.data.user.email
+            );
+          }
+
+          return response;
+        } catch (error: any) {
+          set({
+            error:
+              error.response?.data?.error ||
+              error.message ||
+              'Registration failed',
+            isLoading: false
+          });
+          throw error;
+        }
+      },
+
+      refreshAccessToken: async () => {
+        const { refreshToken } = get();
+        if (!refreshToken) return;
+
+        try {
+          const response = await apiClient.post<{
+            access_token: string;
+            refresh_token: string;
+          }>('/auth/refresh-token', { refresh_token: refreshToken });
+
+          set({
+            accessToken: response.access_token,
+            refreshToken: response.refresh_token
+          });
+
+          localStorage.setItem('access_token', response.access_token);
+          localStorage.setItem('refresh_token', response.refresh_token);
+        } catch (error) {
+          get().logout();
         }
       },
 
@@ -351,7 +345,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // FIX: Include only serializable data, not functions or complex objects
+      // Include only serializable data
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,

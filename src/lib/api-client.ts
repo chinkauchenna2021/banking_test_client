@@ -9,6 +9,8 @@ import { useAuthStore } from '../stores/auth.store';
 class ApiClient {
   private client: AxiosInstance;
   private static instance: ApiClient;
+  private isRefreshing = false;
+  private failedQueue: any[] = [];
 
   // Base URLs for different environments
   private get baseURL(): string {
@@ -21,7 +23,7 @@ class ApiClient {
   private constructor() {
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: 30000,
+      timeout: 3000000,
       headers: {
         'Content-Type': 'application/json'
       },
@@ -42,20 +44,25 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
+        // Skip token for login and register endpoints
+        if (
+          config.url?.includes('/auth/login') ||
+          config.url?.includes('/auth/register') ||
+          config.url?.includes('/auth/forgot-password') ||
+          config.url?.includes('/auth/reset-password')
+        ) {
+          return config;
+        }
+
         // Get token from Zustand store
-        const { accessToken } = useAuthStore.getState();
+        const authState = useAuthStore.getState();
+        const accessToken =
+          authState.accessToken || localStorage.getItem('access_token');
 
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
-        } else {
-          // Fallback to localStorage
-          const token = localStorage.getItem('access_token');
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-            // Sync to Zustand
-            useAuthStore.setState({ accessToken: token });
-          }
         }
+
         return config;
       },
       (error) => {
@@ -67,34 +74,13 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
         // Check if response contains new tokens and update store
-        if (response.data?.access_token || response.data?.refresh_token) {
-          const { access_token, refresh_token } = response.data;
+        const responseData = response.data;
 
-          if (access_token) {
-            localStorage.setItem('access_token', access_token);
-            useAuthStore.setState({ accessToken: access_token });
-          }
-          if (refresh_token) {
-            localStorage.setItem('refresh_token', refresh_token);
-            useAuthStore.setState({ refreshToken: refresh_token });
-          }
-        }
+        // Handle different response structures
+        const tokens = this.extractTokensFromResponse(responseData);
 
-        // Also check in response.data.data structure
-        if (
-          response.data?.data?.access_token ||
-          response.data?.data?.refresh_token
-        ) {
-          const { access_token, refresh_token } = response.data.data;
-
-          if (access_token) {
-            localStorage.setItem('access_token', access_token);
-            useAuthStore.setState({ accessToken: access_token });
-          }
-          if (refresh_token) {
-            localStorage.setItem('refresh_token', refresh_token);
-            useAuthStore.setState({ refreshToken: refresh_token });
-          }
+        if (tokens.accessToken || tokens.refreshToken) {
+          this.updateTokens(tokens.accessToken, tokens.refreshToken);
         }
 
         return response;
@@ -103,43 +89,65 @@ class ApiClient {
         const originalRequest = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
+          if (this.isRefreshing) {
+            // Add to queue and wait for token refresh
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            })
+              .then((token) => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                return this.client(originalRequest);
+              })
+              .catch((err) => {
+                return Promise.reject(err);
+              });
+          }
+
           originalRequest._retry = true;
+          this.isRefreshing = true;
 
           try {
-            const { refreshToken } = useAuthStore.getState();
-            const refreshTokenToUse =
-              refreshToken || localStorage.getItem('refresh_token');
+            const authState = useAuthStore.getState();
+            const refreshToken =
+              authState.refreshToken || localStorage.getItem('refresh_token');
 
-            if (refreshTokenToUse) {
-              const { data } = await axios.post(
+            if (refreshToken) {
+              const response = await axios.post(
                 `${this.baseURL}/auth/refresh-token`,
-                { refresh_token: refreshTokenToUse }
+                { refresh_token: refreshToken }
               );
 
-              // Update both localStorage and Zustand
-              localStorage.setItem('access_token', data.access_token);
-              localStorage.setItem('refresh_token', data.refresh_token);
+              const { access_token, refresh_token } = response.data;
 
-              useAuthStore.setState({
-                accessToken: data.access_token,
-                refreshToken: data.refresh_token
-              });
+              this.updateTokens(access_token, refresh_token);
 
-              originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+              // Process queued requests
+              this.failedQueue.forEach((prom) => prom.resolve(access_token));
+              this.failedQueue = [];
+
+              originalRequest.headers.Authorization = `Bearer ${access_token}`;
               return this.client(originalRequest);
+            } else {
+              throw new Error('No refresh token available');
             }
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError);
+
+            // Process queued requests with error
+            this.failedQueue.forEach((prom) => prom.reject(refreshError));
+            this.failedQueue = [];
+
             // Clear all auth data
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('auth-storage');
-            useAuthStore.getState().logout();
+            this.clearAuthData();
 
             // Only redirect if we're on the client
             if (typeof window !== 'undefined') {
               window.location.href = '/auth/login';
             }
+
+            return Promise.reject(refreshError);
+          } finally {
+            this.isRefreshing = false;
           }
         }
 
@@ -148,6 +156,62 @@ class ApiClient {
     );
   }
 
+  private extractTokensFromResponse(responseData: any) {
+    let accessToken = null;
+    let refreshToken = null;
+
+    // Check different response structures
+    if (responseData.access_token) {
+      accessToken = responseData.access_token;
+    } else if (responseData.data?.access_token) {
+      accessToken = responseData.data.access_token;
+    }
+
+    if (responseData.refresh_token) {
+      refreshToken = responseData.refresh_token;
+    } else if (responseData.data?.refresh_token) {
+      refreshToken = responseData.data.refresh_token;
+    }
+
+    return { accessToken, refreshToken };
+  }
+
+  private updateTokens(
+    accessToken: string | null,
+    refreshToken: string | null
+  ): void {
+    if (accessToken) {
+      localStorage.setItem('access_token', accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
+
+    // Update Zustand store
+    useAuthStore.setState({
+      accessToken: accessToken || undefined,
+      refreshToken: refreshToken || undefined,
+      isAuthenticated: !!accessToken
+    });
+  }
+
+  private clearAuthData(): void {
+    // Clear localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('auth-storage');
+    localStorage.removeItem('pending_verification_email');
+
+    // Clear Zustand state
+    useAuthStore.setState({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false
+    });
+  }
+
+  // HTTP Methods
   // =================================================================
   // HTTP Methods
   // =================================================================
@@ -187,6 +251,7 @@ class ApiClient {
     return this.client.delete(url, config).then((response) => response.data);
   }
 
+  // Auth methods
   // =================================================================
   // Auth-specific methods with token handling
   // =================================================================
@@ -200,8 +265,9 @@ class ApiClient {
       }
 
       // Update tokens if present
-      if (response.access_token && response.refresh_token) {
-        this.updateTokens(response.access_token, response.refresh_token);
+      const tokens = this.extractTokensFromResponse(response);
+      if (tokens.accessToken && tokens.refreshToken) {
+        this.updateTokens(tokens.accessToken, tokens.refreshToken);
       }
 
       return response;
@@ -216,19 +282,28 @@ class ApiClient {
       const response = await this.post('/auth/verify-email', { token });
 
       // Update tokens if present
-      if (response.data?.access_token && response.data?.refresh_token) {
-        this.updateTokens(
-          response.data.access_token,
-          response.data.refresh_token
-        );
-      } else if (response.access_token && response.refresh_token) {
-        this.updateTokens(response.access_token, response.refresh_token);
+      const tokens = this.extractTokensFromResponse(response);
+      if (tokens.accessToken && tokens.refreshToken) {
+        this.updateTokens(tokens.accessToken, tokens.refreshToken);
       }
 
       return response;
     } catch (error) {
       console.error('Verify email error:', error);
       throw error;
+    }
+  }
+
+  public async logout(): Promise<any> {
+    try {
+      const response = await this.post('/auth/logout');
+      return response;
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    } finally {
+      // Always clear local data
+      this.clearAuthData();
     }
   }
 
@@ -247,19 +322,6 @@ class ApiClient {
       console.error('Refresh token error:', error);
       throw error;
     }
-  }
-
-  private updateTokens(accessToken: string, refreshToken: string): void {
-    // Update localStorage
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
-
-    // Update Zustand store
-    useAuthStore.setState({
-      accessToken,
-      refreshToken,
-      isAuthenticated: true
-    });
   }
 
   // =================================================================
@@ -606,19 +668,6 @@ class ApiClient {
     }
   }
 
-  public async logout(): Promise<any> {
-    try {
-      const response = await this.post('/auth/logout');
-      return response;
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    } finally {
-      // Always clear local data
-      this.clearAuthData();
-    }
-  }
-
   public async getProfile<T = any>(): Promise<T> {
     return this.get<T>('/auth/profile');
   }
@@ -636,21 +685,6 @@ class ApiClient {
   // =================================================================
   // Utility Methods
   // =================================================================
-  public clearAuthData(): void {
-    // Clear localStorage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('auth-storage');
-    localStorage.removeItem('pending_verification_email');
-
-    // Clear Zustand state
-    useAuthStore.setState({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false
-    });
-  }
 
   public isAuthenticated(): boolean {
     const { accessToken, isAuthenticated } = useAuthStore.getState();

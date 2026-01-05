@@ -25,11 +25,14 @@ class TokenSync {
 
   static async fetchAndSyncUser(accessToken: string) {
     try {
-      const response = await fetch('/api/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
         }
-      });
+      );
 
       if (response.ok) {
         const userData = await response.json();
