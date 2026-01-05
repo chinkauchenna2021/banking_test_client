@@ -1,7 +1,9 @@
+// hooks/useAuth.ts
 'use client';
 
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
+import { useAuthHydration } from './useAuthHydration';
 
 export const useAuth = () => {
   const {
@@ -22,18 +24,21 @@ export const useAuth = () => {
     login
   } = useAuthStore();
 
-  // Auto-fetch profile on mount if authenticated
+  const isHydrated = useAuthHydration();
+
+  // Auto-fetch profile on mount if authenticated and hydrated
   useEffect(() => {
-    if (isAuthenticated && !user) {
+    if (isHydrated && isAuthenticated && !user) {
       getProfile().catch(console.error);
     }
-  }, [isAuthenticated, user, getProfile]);
+  }, [isHydrated, isAuthenticated, user, getProfile]);
 
   return {
     user,
     isAuthenticated,
     isLoading,
     error,
+    isHydrated,
     login: async (email: string, password: string) => {
       return await login(email, password);
     },

@@ -20,12 +20,14 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { FormContainer } from '@/components/auth/FormContainer';
+import { useAuthHydration } from '@/hooks/useAuthHydration';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { verifyEmail, error, clearError, isLoading } = useAuth();
   const { toast } = useToast();
+  const isHydrated = useAuthHydration();
 
   const email =
     searchParams.get('email') ||
@@ -39,14 +41,13 @@ export default function VerifyEmailPage() {
   const [countdown, setCountdown] = useState(0);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Auto-verify if token is present in URL
+  // Wait for hydration before auto-verifying
   useEffect(() => {
-    if (token && !isVerified && !isVerifying) {
+    if (isHydrated && token && !isVerified && !isVerifying) {
       handleAutoVerify();
     }
-  }, [token]);
+  }, [isHydrated, token, isVerified, isVerifying]);
 
-  // Countdown timer for resend cooldown
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -57,7 +58,7 @@ export default function VerifyEmailPage() {
   const handleAutoVerify = async () => {
     setIsVerifying(true);
     try {
-      await verifyEmail(token!);
+      const response = await verifyEmail(token!);
       setIsVerified(true);
 
       toast({
@@ -65,10 +66,10 @@ export default function VerifyEmailPage() {
         description: 'Your account is now active. Redirecting to dashboard...'
       });
 
-      // Redirect to dashboard after 3 seconds
+      // Wait for Zustand to persist the state
       setTimeout(() => {
         router.push('/dashboard');
-      }, 3000);
+      }, 1000);
     } catch (error: any) {
       toast({
         title: 'Verification Failed',
@@ -97,7 +98,7 @@ export default function VerifyEmailPage() {
     }
 
     try {
-      await verifyEmail(verificationToken);
+      const response = await verifyEmail(verificationToken);
       setIsVerified(true);
 
       toast({
@@ -105,10 +106,9 @@ export default function VerifyEmailPage() {
         description: 'Your account is now active.'
       });
 
-      // Redirect to dashboard after 2 seconds
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000);
+      }, 1000);
     } catch (error: any) {
       toast({
         title: 'Verification Failed',
@@ -130,7 +130,7 @@ export default function VerifyEmailPage() {
     try {
       await apiClient.post('/auth/resend-verification', { email });
       setEmailSent(true);
-      setCountdown(60); // 60 seconds cooldown
+      setCountdown(60);
 
       toast({
         title: 'Verification Email Sent!',
@@ -149,6 +149,20 @@ export default function VerifyEmailPage() {
       setIsResending(false);
     }
   };
+
+  // Show loading state while hydrating
+  if (!isHydrated) {
+    return (
+      <FormContainer
+        title='Loading...'
+        description='Please wait while we prepare your session'
+      >
+        <div className='flex justify-center py-12'>
+          <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600' />
+        </div>
+      </FormContainer>
+    );
+  }
 
   // Success state content
   if (isVerified) {

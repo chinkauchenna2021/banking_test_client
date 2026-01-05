@@ -2,9 +2,8 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage, PersistOptions } from 'zustand/middleware';
 import { apiClient } from '../lib/api-client';
-import { useTokenStorage } from '@/hooks/useTokenStorage';
 
 export interface User {
   id: string;
@@ -29,6 +28,7 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  _hasHydrated: boolean; // Track hydration state
 
   // Actions
   login: (email: string, password: string) => Promise<any>;
@@ -46,15 +46,13 @@ export interface AuthState {
   getProfile: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
-
-  // Private methods for token management
-  _setTokens: (
-    accessToken: string | null,
-    refreshToken: string | null,
-    user?: User | null
-  ) => void;
-  _clearTokens: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
+
+type AuthPersist = PersistOptions<AuthState> & {
+  name: string;
+  storage: ReturnType<typeof createJSONStorage>;
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -65,33 +63,10 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      _hasHydrated: false,
 
-      _setTokens: (accessToken, refreshToken, user) => {
-        // Update Zustand state
-        set({
-          accessToken,
-          refreshToken,
-          user: user || get().user,
-          isAuthenticated: !!accessToken
-        });
-
-        // Update localStorage via custom hook
-        const { setTokens } = useTokenStorage();
-        setTokens(accessToken, refreshToken, user || get().user);
-      },
-
-      _clearTokens: () => {
-        // Clear Zustand state
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false
-        });
-
-        // Clear localStorage via custom hook
-        const { clearTokens } = useTokenStorage();
-        clearTokens();
+      setHasHydrated: (state) => {
+        set({ _hasHydrated: state });
       },
 
       login: async (email: string, password: string) => {
@@ -100,10 +75,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await apiClient.login(email, password);
 
           if (response.requires_two_factor) {
-            set({
-              isLoading: false,
-              error: null
-            });
+            set({ isLoading: false, error: null });
             return response;
           }
 
@@ -118,10 +90,12 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('No access token received');
           }
 
-          // Update tokens using private method
-          get()._setTokens(accessToken, refreshToken, user);
-
+          // Update state
           set({
+            user,
+            accessToken,
+            refreshToken,
+            isAuthenticated: true,
             isLoading: false,
             error: null
           });
@@ -130,10 +104,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           const errorMessage =
             error.response?.data?.error || error.message || 'Login failed';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
+          set({ error: errorMessage, isLoading: false });
           throw error;
         }
       },
@@ -142,7 +113,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await apiClient.verifyEmail(token);
-
           console.log('Verification response:', response);
 
           // Extract data correctly from response structure
@@ -156,16 +126,18 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('No access token received after verification');
           }
 
-          // Update tokens using private method
-          get()._setTokens(accessToken, refreshToken, userData);
-
-          // Clear pending verification email
-          localStorage.removeItem('pending_verification_email');
-
+          // Update state
           set({
+            user: userData,
+            accessToken,
+            refreshToken,
+            isAuthenticated: true,
             isLoading: false,
             error: null
           });
+
+          // Clear pending verification email
+          localStorage.removeItem('pending_verification_email');
 
           return response;
         } catch (error: any) {
@@ -174,10 +146,7 @@ export const useAuthStore = create<AuthState>()(
             error.response?.data?.error ||
             error.message ||
             'Email verification failed';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
+          set({ error: errorMessage, isLoading: false });
           throw error;
         }
       },
@@ -189,16 +158,18 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.log('Logout API error:', error);
         } finally {
-          // Clear all tokens using private method
-          get()._clearTokens();
-
-          // Clear any additional localStorage items
-          localStorage.removeItem('pending_verification_email');
-
+          // Clear all state
           set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            isAuthenticated: false,
             isLoading: false,
             error: null
           });
+
+          // Clear any additional localStorage items
+          localStorage.removeItem('pending_verification_email');
         }
       },
 
@@ -209,7 +180,6 @@ export const useAuthStore = create<AuthState>()(
             '/auth/register',
             userData
           );
-
           const user = response.data?.user || response.user;
 
           set({
@@ -225,7 +195,6 @@ export const useAuthStore = create<AuthState>()(
             response.data?.requires_verification ||
             response.requires_verification
           ) {
-            // Store email for verification reminder
             const email = user?.email || response.data?.user?.email;
             if (email) {
               localStorage.setItem('pending_verification_email', email);
@@ -255,8 +224,10 @@ export const useAuthStore = create<AuthState>()(
             refresh_token: string;
           }>('/auth/refresh-token', { refresh_token: refreshToken });
 
-          // Update tokens using private method
-          get()._setTokens(response.access_token, response.refresh_token);
+          set({
+            accessToken: response.access_token,
+            refreshToken: response.refresh_token
+          });
         } catch (error) {
           console.error('Token refresh failed:', error);
           get().logout();
@@ -338,10 +309,11 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('No access token received');
           }
 
-          // Update tokens using private method
-          get()._setTokens(accessToken, refreshToken, user);
-
           set({
+            user,
+            accessToken,
+            refreshToken,
+            isAuthenticated: true,
             isLoading: false,
             error: null
           });
@@ -363,7 +335,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await apiClient.get<any>('/auth/profile');
-
           const user = response.data || response.user;
 
           if (user) {
@@ -372,10 +343,6 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
               error: null
             });
-
-            // Update user in token storage
-            const { setUser } = useTokenStorage();
-            setUser(user);
           } else {
             throw new Error('No user data received');
           }
@@ -396,27 +363,42 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // Don't persist tokens in Zustand storage - we use useLocalStorage for that
-      partialize: (state) => ({
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state: {
+        user: any;
+        accessToken: any;
+        refreshToken: any;
+        isAuthenticated: any;
+      }) => ({
         user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated
       }),
+      onRehydrateStorage:
+        () =>
+        (state: { setHasHydrated: (arg0: boolean) => void }, error: any) => {
+          if (error) {
+            console.error('Error during hydration:', error);
+          } else if (state) {
+            state.setHasHydrated(true);
+            console.log('Auth store hydrated successfully');
+          }
+        },
+      version: 1,
       migrate: (persistedState: any, version: number) => {
         console.log('Migrating auth state from version:', version);
 
-        if (!persistedState || typeof persistedState !== 'object') {
+        if (version === 0) {
+          // Migration from old structure if needed
           return {
-            user: null,
-            isAuthenticated: false
+            ...persistedState,
+            _hasHydrated: false
           };
         }
 
-        return {
-          user: persistedState.user || null,
-          isAuthenticated: persistedState.isAuthenticated || false
-        };
-      },
-      version: 1
-    }
+        return persistedState;
+      }
+    } as unknown as AuthPersist
   )
 );

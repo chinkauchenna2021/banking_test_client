@@ -4,7 +4,6 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig
 } from 'axios';
-import { useTokenStorage } from '@/hooks/useTokenStorage';
 import { useAuthStore } from '@/stores/auth.store';
 
 class ApiClient {
@@ -14,7 +13,7 @@ class ApiClient {
   private failedQueue: any[] = [];
 
   // Base URLs for different environments
-  private get baseURL(): string {
+  private getBaseURL(): string {
     if (typeof window === 'undefined') {
       return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     }
@@ -23,7 +22,7 @@ class ApiClient {
 
   private constructor() {
     this.client = axios.create({
-      baseURL: this.baseURL,
+      baseURL: this.getBaseURL(),
       timeout: 3000000,
       headers: {
         'Content-Type': 'application/json'
@@ -34,62 +33,44 @@ class ApiClient {
     this.setupInterceptors();
   }
 
-  public static getInstance(): ApiClient {
-    if (!ApiClient.instance) {
-      ApiClient.instance = new ApiClient();
-    }
-    return ApiClient.instance;
+  private getAuthState() {
+    return useAuthStore.getState();
   }
 
   private setupInterceptors() {
     // Request interceptor
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        // Skip token for login and register endpoints
-        if (
-          config.url?.includes('/auth/login') ||
-          config.url?.includes('/auth/register') ||
-          config.url?.includes('/auth/forgot-password') ||
-          config.url?.includes('/auth/reset-password') ||
-          config.url?.includes('/auth/verify-email')
-        ) {
+        // Skip token for auth endpoints (except refresh token)
+        const isAuthEndpoint = config.url?.includes('/auth/');
+        const isRefreshToken = config.url?.includes('/auth/refresh-token');
+
+        if (isAuthEndpoint && !isRefreshToken) {
           return config;
         }
 
-        // Get token from token storage
-        const { getAccessToken } = useTokenStorage();
-        const accessToken = getAccessToken();
+        // Get token from Zustand store
+        const { accessToken } = this.getAuthState();
 
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
-          console.log(
-            'Adding Authorization header:',
-            accessToken.substring(0, 20) + '...'
-          );
         } else {
           console.warn('No access token found for request:', config.url);
         }
 
         return config;
       },
-      (error) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
 
     // Response interceptor
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        // Check if response contains new tokens and update storage
-        const responseData = response.data;
-        const tokens = this.extractTokensFromResponse(responseData);
+        // Extract and update tokens from response if present
+        const tokens = this.extractTokensFromResponse(response.data);
 
-        if (tokens.accessToken || tokens.refreshToken) {
-          this.updateTokens(
-            tokens.accessToken,
-            tokens.refreshToken,
-            tokens.user
-          );
+        if (tokens.accessToken) {
+          this.updateAuthState(tokens);
         }
 
         return response;
@@ -97,6 +78,7 @@ class ApiClient {
       async (error) => {
         const originalRequest = error.config;
 
+        // Handle 401 Unauthorized errors
         if (error.response?.status === 401 && !originalRequest._retry) {
           if (this.isRefreshing) {
             // Add to queue and wait for token refresh
@@ -116,23 +98,20 @@ class ApiClient {
           this.isRefreshing = true;
 
           try {
-            const { getRefreshToken } = useTokenStorage();
-            const refreshToken = getRefreshToken();
+            const { refreshToken } = this.getAuthState();
 
             if (refreshToken) {
+              // Call refresh token endpoint
               const response = await axios.post(
-                `${this.baseURL}/auth/refresh-token`,
+                `${this.getBaseURL()}/auth/refresh-token`,
                 { refresh_token: refreshToken }
               );
 
               const tokens = this.extractTokensFromResponse(response.data);
 
               if (tokens.accessToken) {
-                this.updateTokens(
-                  tokens.accessToken,
-                  tokens.refreshToken,
-                  tokens.user
-                );
+                // Update auth state
+                this.updateAuthState(tokens);
 
                 // Process queued requests
                 this.failedQueue.forEach((prom) =>
@@ -140,8 +119,11 @@ class ApiClient {
                 );
                 this.failedQueue = [];
 
+                // Retry original request with new token
                 originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
                 return this.client(originalRequest);
+              } else {
+                throw new Error('No access token in refresh response');
               }
             } else {
               throw new Error('No refresh token available');
@@ -153,13 +135,8 @@ class ApiClient {
             this.failedQueue.forEach((prom) => prom.reject(refreshError));
             this.failedQueue = [];
 
-            // Clear all auth data
-            this.clearAuthData();
-
-            // Only redirect if we're on the client
-            if (typeof window !== 'undefined') {
-              window.location.href = '/auth/login';
-            }
+            // Clear auth state
+            this.getAuthState().logout();
 
             return Promise.reject(refreshError);
           } finally {
@@ -177,9 +154,8 @@ class ApiClient {
     let refreshToken = null;
     let user = null;
 
-    // Check different response structures
     if (responseData && typeof responseData === 'object') {
-      // Structure 1: Direct properties
+      // Direct properties
       if (responseData.access_token) {
         accessToken = responseData.access_token;
       }
@@ -190,7 +166,7 @@ class ApiClient {
         user = responseData.user;
       }
 
-      // Structure 2: Nested in data property
+      // Nested in data property
       if (!accessToken && responseData.data?.access_token) {
         accessToken = responseData.data.access_token;
       }
@@ -205,28 +181,38 @@ class ApiClient {
     return { accessToken, refreshToken, user };
   }
 
-  private updateTokens(
-    accessToken: string | null,
-    refreshToken: string | null,
-    user?: any
-  ): void {
-    const { setTokens } = useTokenStorage();
-    setTokens(accessToken, refreshToken, user);
-    console.log('Tokens updated in storage:', {
-      accessToken: !!accessToken,
-      refreshToken: !!refreshToken,
-      user: !!user
-    });
+  private updateAuthState({ accessToken, refreshToken, user }: any) {
+    const store = useAuthStore.getState();
+
+    // Only update if we have new tokens
+    if (accessToken || refreshToken || user) {
+      // Create a partial state update
+      const updatedState: Partial<typeof store> = {};
+
+      if (accessToken !== undefined) updatedState.accessToken = accessToken;
+      if (refreshToken !== undefined) updatedState.refreshToken = refreshToken;
+      if (user !== undefined) updatedState.user = user;
+      if (accessToken !== undefined)
+        updatedState.isAuthenticated = !!accessToken;
+
+      // Use Zustand's set function to update state
+      useAuthStore.setState(updatedState);
+    }
   }
 
   private clearAuthData(): void {
-    const { clearTokens } = useTokenStorage();
-    clearTokens();
-
     // Clear any additional localStorage items
     localStorage.removeItem('pending_verification_email');
 
+    // Zustand will handle clearing the persisted state automatically
     console.log('Auth data cleared');
+  }
+
+  public static getInstance(): ApiClient {
+    if (!ApiClient.instance) {
+      ApiClient.instance = new ApiClient();
+    }
+    return ApiClient.instance;
   }
 
   // HTTP Methods
@@ -312,10 +298,6 @@ class ApiClient {
       const response = await this.post('/auth/refresh-token', {
         refresh_token: refreshToken
       });
-
-      if (response.access_token && response.refresh_token) {
-        this.updateTokens(response.access_token, response.refresh_token);
-      }
 
       return response;
     } catch (error) {
@@ -655,11 +637,6 @@ class ApiClient {
         temp_token: tempToken,
         code
       });
-
-      // Update tokens if present
-      if (response.access_token && response.refresh_token) {
-        this.updateTokens(response.access_token, response.refresh_token);
-      }
 
       return response;
     } catch (error) {
