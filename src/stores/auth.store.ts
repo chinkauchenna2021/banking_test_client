@@ -3,7 +3,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiClient } from '../lib/api-client';
-import { useTokenStorage } from '@/hooks/useTokenStorage';
 
 export interface User {
   id: string;
@@ -29,7 +28,7 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
 
-  // Actions
+  // Actions - Using more flexible return types
   login: (email: string, password: string) => Promise<any>;
   register: (userData: any) => Promise<any>;
   logout: () => Promise<void>;
@@ -45,14 +44,6 @@ export interface AuthState {
   getProfile: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
-
-  // Private methods for token management
-  _setTokens: (
-    accessToken: string | null,
-    refreshToken: string | null,
-    user?: User | null
-  ) => void;
-  _clearTokens: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -64,34 +55,6 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
-
-      _setTokens: (accessToken, refreshToken, user) => {
-        // Update Zustand state
-        set({
-          accessToken,
-          refreshToken,
-          user: user || get().user,
-          isAuthenticated: !!accessToken
-        });
-
-        // Update localStorage via custom hook
-        const { setTokens } = useTokenStorage();
-        setTokens(accessToken, refreshToken, user || get().user);
-      },
-
-      _clearTokens: () => {
-        // Clear Zustand state
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false
-        });
-
-        // Clear localStorage via custom hook
-        const { clearTokens } = useTokenStorage();
-        clearTokens();
-      },
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -106,24 +69,19 @@ export const useAuthStore = create<AuthState>()(
             return response;
           }
 
-          // Extract tokens and user from response
-          const user = response.user || response.data?.user;
-          const accessToken =
-            response.access_token || response.data?.access_token;
-          const refreshToken =
-            response.refresh_token || response.data?.refresh_token;
-
-          if (!accessToken) {
-            throw new Error('No access token received');
-          }
-
-          // Update tokens using private method
-          get()._setTokens(accessToken, refreshToken, user);
-
+          // Set state BEFORE returning
           set({
+            user: response.user,
+            accessToken: response.access_token,
+            refreshToken: response.refresh_token,
+            isAuthenticated: true,
             isLoading: false,
             error: null
           });
+
+          // Manually update localStorage as backup
+          localStorage.setItem('access_token', response.access_token);
+          localStorage.setItem('refresh_token', response.refresh_token);
 
           return response;
         } catch (error: any) {
@@ -151,20 +109,23 @@ export const useAuthStore = create<AuthState>()(
           const refreshToken =
             response.data?.refresh_token || response.refresh_token;
 
-          if (!accessToken) {
-            throw new Error('No access token received after verification');
-          }
-
-          // Update tokens using private method
-          get()._setTokens(accessToken, refreshToken, userData);
-
-          // Clear pending verification email
-          localStorage.removeItem('pending_verification_email');
-
+          // Set state
           set({
+            user: userData,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            isAuthenticated: true,
             isLoading: false,
             error: null
           });
+
+          // Manual localStorage update
+          if (accessToken) {
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', refreshToken);
+          }
+
+          localStorage.removeItem('pending_verification_email');
 
           return response;
         } catch (error: any) {
@@ -188,16 +149,23 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.log('Logout API error:', error);
         } finally {
-          // Clear all tokens using private method
-          get()._clearTokens();
-
-          // Clear any additional localStorage items
-          localStorage.removeItem('pending_verification_email');
-
+          // Clear Zustand state
           set({
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            isAuthenticated: false,
             isLoading: false,
             error: null
           });
+
+          // Clear localStorage manually
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('pending_verification_email');
+
+          // Clear Zustand persisted storage
+          localStorage.removeItem('auth-storage');
         }
       },
 
@@ -209,10 +177,8 @@ export const useAuthStore = create<AuthState>()(
             userData
           );
 
-          const user = response.data?.user || response.user;
-
           set({
-            user: user || null,
+            user: response.data?.user || null,
             accessToken: null,
             refreshToken: null,
             isAuthenticated: false,
@@ -220,15 +186,11 @@ export const useAuthStore = create<AuthState>()(
             error: null
           });
 
-          if (
-            response.data?.requires_verification ||
-            response.requires_verification
-          ) {
-            // Store email for verification reminder
-            const email = user?.email || response.data?.user?.email;
-            if (email) {
-              localStorage.setItem('pending_verification_email', email);
-            }
+          if (response.data?.requires_verification) {
+            localStorage.setItem(
+              'pending_verification_email',
+              response.data.user.email
+            );
           }
 
           return response;
@@ -254,10 +216,14 @@ export const useAuthStore = create<AuthState>()(
             refresh_token: string;
           }>('/auth/refresh-token', { refresh_token: refreshToken });
 
-          // Update tokens using private method
-          get()._setTokens(response.access_token, response.refresh_token);
+          set({
+            accessToken: response.access_token,
+            refreshToken: response.refresh_token
+          });
+
+          localStorage.setItem('access_token', response.access_token);
+          localStorage.setItem('refresh_token', response.refresh_token);
         } catch (error) {
-          console.error('Token refresh failed:', error);
           get().logout();
         }
       },
@@ -327,23 +293,17 @@ export const useAuthStore = create<AuthState>()(
             code
           });
 
-          const user = response.user || response.data?.user;
-          const accessToken =
-            response.access_token || response.data?.access_token;
-          const refreshToken =
-            response.refresh_token || response.data?.refresh_token;
-
-          if (!accessToken) {
-            throw new Error('No access token received');
-          }
-
-          // Update tokens using private method
-          get()._setTokens(accessToken, refreshToken, user);
-
           set({
+            user: response.user,
+            accessToken: response.access_token,
+            refreshToken: response.refresh_token,
+            isAuthenticated: true,
             isLoading: false,
             error: null
           });
+
+          localStorage.setItem('access_token', response.access_token);
+          localStorage.setItem('refresh_token', response.refresh_token);
 
           return response;
         } catch (error: any) {
@@ -363,21 +323,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await apiClient.get<any>('/auth/profile');
 
-          const user = response.data || response.user;
-
-          if (user) {
-            set({
-              user: user,
-              isLoading: false,
-              error: null
-            });
-
-            // Update user in token storage
-            const { setUser } = useTokenStorage();
-            setUser(user);
-          } else {
-            throw new Error('No user data received');
-          }
+          set({
+            user: response.data,
+            isLoading: false,
+            error: null
+          });
         } catch (error: any) {
           set({
             error:
@@ -395,26 +345,36 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // Don't persist tokens in Zustand storage - we use useLocalStorage for that
+      // Include only serializable data
       partialize: (state) => ({
         user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated
       }),
+      // Add migration for corrupted state
       migrate: (persistedState: any, version: number) => {
         console.log('Migrating auth state from version:', version);
 
+        // If state is corrupted, reset it
         if (!persistedState || typeof persistedState !== 'object') {
           return {
             user: null,
+            accessToken: null,
+            refreshToken: null,
             isAuthenticated: false
           };
         }
 
+        // Ensure required fields exist
         return {
           user: persistedState.user || null,
+          accessToken: persistedState.accessToken || null,
+          refreshToken: persistedState.refreshToken || null,
           isAuthenticated: persistedState.isAuthenticated || false
         };
       },
+      // Add versioning
       version: 1
     }
   )
