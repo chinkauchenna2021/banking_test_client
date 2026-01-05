@@ -466,7 +466,7 @@ class ApiClient {
   // }
 
   public getUserTransfers<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/transfers', { params });
+    return this.get<T>('/transfers/transfers', { params });
   }
 
   public getScheduledTransfers<T = any>(params: any = {}): Promise<T> {
