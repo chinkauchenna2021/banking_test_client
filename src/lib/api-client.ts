@@ -4,7 +4,8 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig
 } from 'axios';
-import { useAuthStore } from '../stores/auth.store';
+import { useTokenStorage } from '@/hooks/useTokenStorage';
+import { useAuthStore } from '@/stores/auth.store';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -49,18 +50,24 @@ class ApiClient {
           config.url?.includes('/auth/login') ||
           config.url?.includes('/auth/register') ||
           config.url?.includes('/auth/forgot-password') ||
-          config.url?.includes('/auth/reset-password')
+          config.url?.includes('/auth/reset-password') ||
+          config.url?.includes('/auth/verify-email')
         ) {
           return config;
         }
 
-        // Get token from Zustand store
-        const authState = useAuthStore.getState();
-        const accessToken =
-          authState.accessToken || localStorage.getItem('access_token');
+        // Get token from token storage
+        const { getAccessToken } = useTokenStorage();
+        const accessToken = getAccessToken();
 
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
+          console.log(
+            'Adding Authorization header:',
+            accessToken.substring(0, 20) + '...'
+          );
+        } else {
+          console.warn('No access token found for request:', config.url);
         }
 
         return config;
@@ -73,14 +80,16 @@ class ApiClient {
     // Response interceptor
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        // Check if response contains new tokens and update store
+        // Check if response contains new tokens and update storage
         const responseData = response.data;
-
-        // Handle different response structures
         const tokens = this.extractTokensFromResponse(responseData);
 
         if (tokens.accessToken || tokens.refreshToken) {
-          this.updateTokens(tokens.accessToken, tokens.refreshToken);
+          this.updateTokens(
+            tokens.accessToken,
+            tokens.refreshToken,
+            tokens.user
+          );
         }
 
         return response;
@@ -107,9 +116,8 @@ class ApiClient {
           this.isRefreshing = true;
 
           try {
-            const authState = useAuthStore.getState();
-            const refreshToken =
-              authState.refreshToken || localStorage.getItem('refresh_token');
+            const { getRefreshToken } = useTokenStorage();
+            const refreshToken = getRefreshToken();
 
             if (refreshToken) {
               const response = await axios.post(
@@ -117,16 +125,24 @@ class ApiClient {
                 { refresh_token: refreshToken }
               );
 
-              const { access_token, refresh_token } = response.data;
+              const tokens = this.extractTokensFromResponse(response.data);
 
-              this.updateTokens(access_token, refresh_token);
+              if (tokens.accessToken) {
+                this.updateTokens(
+                  tokens.accessToken,
+                  tokens.refreshToken,
+                  tokens.user
+                );
 
-              // Process queued requests
-              this.failedQueue.forEach((prom) => prom.resolve(access_token));
-              this.failedQueue = [];
+                // Process queued requests
+                this.failedQueue.forEach((prom) =>
+                  prom.resolve(tokens.accessToken)
+                );
+                this.failedQueue = [];
 
-              originalRequest.headers.Authorization = `Bearer ${access_token}`;
-              return this.client(originalRequest);
+                originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
+                return this.client(originalRequest);
+              }
             } else {
               throw new Error('No refresh token available');
             }
@@ -159,62 +175,61 @@ class ApiClient {
   private extractTokensFromResponse(responseData: any) {
     let accessToken = null;
     let refreshToken = null;
+    let user = null;
 
     // Check different response structures
-    if (responseData.access_token) {
-      accessToken = responseData.access_token;
-    } else if (responseData.data?.access_token) {
-      accessToken = responseData.data.access_token;
+    if (responseData && typeof responseData === 'object') {
+      // Structure 1: Direct properties
+      if (responseData.access_token) {
+        accessToken = responseData.access_token;
+      }
+      if (responseData.refresh_token) {
+        refreshToken = responseData.refresh_token;
+      }
+      if (responseData.user) {
+        user = responseData.user;
+      }
+
+      // Structure 2: Nested in data property
+      if (!accessToken && responseData.data?.access_token) {
+        accessToken = responseData.data.access_token;
+      }
+      if (!refreshToken && responseData.data?.refresh_token) {
+        refreshToken = responseData.data.refresh_token;
+      }
+      if (!user && responseData.data?.user) {
+        user = responseData.data.user;
+      }
     }
 
-    if (responseData.refresh_token) {
-      refreshToken = responseData.refresh_token;
-    } else if (responseData.data?.refresh_token) {
-      refreshToken = responseData.data.refresh_token;
-    }
-
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, user };
   }
 
   private updateTokens(
     accessToken: string | null,
-    refreshToken: string | null
+    refreshToken: string | null,
+    user?: any
   ): void {
-    if (accessToken) {
-      localStorage.setItem('access_token', accessToken);
-    }
-    if (refreshToken) {
-      localStorage.setItem('refresh_token', refreshToken);
-    }
-
-    // Update Zustand store
-    useAuthStore.setState({
-      accessToken: accessToken || undefined,
-      refreshToken: refreshToken || undefined,
-      isAuthenticated: !!accessToken
+    const { setTokens } = useTokenStorage();
+    setTokens(accessToken, refreshToken, user);
+    console.log('Tokens updated in storage:', {
+      accessToken: !!accessToken,
+      refreshToken: !!refreshToken,
+      user: !!user
     });
   }
 
   private clearAuthData(): void {
-    // Clear localStorage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('auth-storage');
+    const { clearTokens } = useTokenStorage();
+    clearTokens();
+
+    // Clear any additional localStorage items
     localStorage.removeItem('pending_verification_email');
 
-    // Clear Zustand state
-    useAuthStore.setState({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false
-    });
+    console.log('Auth data cleared');
   }
 
   // HTTP Methods
-  // =================================================================
-  // HTTP Methods
-  // =================================================================
   public get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     return this.client.get(url, config).then((response) => response.data);
   }
@@ -251,10 +266,7 @@ class ApiClient {
     return this.client.delete(url, config).then((response) => response.data);
   }
 
-  // Auth methods
-  // =================================================================
-  // Auth-specific methods with token handling
-  // =================================================================
+  // Auth-specific methods
   public async login(email: string, password: string): Promise<any> {
     try {
       const response = await this.post('/auth/login', { email, password });
@@ -264,12 +276,7 @@ class ApiClient {
         return response;
       }
 
-      // Update tokens if present
-      const tokens = this.extractTokensFromResponse(response);
-      if (tokens.accessToken && tokens.refreshToken) {
-        this.updateTokens(tokens.accessToken, tokens.refreshToken);
-      }
-
+      // Tokens will be automatically updated by the interceptor
       return response;
     } catch (error) {
       console.error('Login error:', error);
@@ -280,13 +287,6 @@ class ApiClient {
   public async verifyEmail(token: string): Promise<any> {
     try {
       const response = await this.post('/auth/verify-email', { token });
-
-      // Update tokens if present
-      const tokens = this.extractTokensFromResponse(response);
-      if (tokens.accessToken && tokens.refreshToken) {
-        this.updateTokens(tokens.accessToken, tokens.refreshToken);
-      }
-
       return response;
     } catch (error) {
       console.error('Verify email error:', error);

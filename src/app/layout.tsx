@@ -14,6 +14,7 @@ import './globals.css';
 import './theme.css';
 import { useAuthDebug } from '@/hooks/useAuthDebug';
 import DebugAuth from '@/components/DebugAuth';
+import { AuthInitializer } from '@/components/auth/AuthInitializer';
 
 const META_THEME_COLORS = {
   light: '#ffffff',
@@ -68,6 +69,7 @@ export default async function RootLayout({
               <AuthProvider>
                 <StoreProvider>
                   <DebugAuth />
+                  <AuthInitializer />
                   {children}
                   <Toasters />
                   <Toaster />

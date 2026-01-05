@@ -44,7 +44,7 @@ export default function ResetPasswordPage() {
         variant: 'destructive'
       });
     }
-  }, [token]);
+  }, [token, toast]);
 
   const checkPasswordStrength = (password: string) => {
     let strength = 0;
@@ -79,10 +79,19 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (newPassword !== confirmPassword || passwordStrength < 60) {
+    if (newPassword !== confirmPassword) {
       toast({
         title: 'Error',
         description: 'Passwords do not match.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (passwordStrength < 60) {
+      toast({
+        title: 'Error',
+        description: 'Password is too weak. Please choose a stronger password.',
         variant: 'destructive'
       });
       return;
@@ -116,7 +125,6 @@ export default function ResetPasswordPage() {
       <FormContainer
         title='Invalid Link'
         description='This password reset link is invalid or has expired'
-        // icon={<Shield className="h-7 w-7 text-white" />}
         backText='Request new reset link'
         backLink='/auth/forgot-password'
       >
