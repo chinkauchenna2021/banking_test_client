@@ -2,28 +2,56 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('auth-storage');
-  const isAuth = token?.value.includes('isAuthenticated":"true');
-  
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
-  const isAdminPage = request.nextUrl.pathname.startsWith('/dashboard/admin');
-  
-  // Redirect to login if trying to access protected routes without auth
-  if (!isAuth && !isAuthPage) {
+  // Get the pathname of the request
+  const path = request.nextUrl.pathname;
+
+  // Define public paths that don't require authentication
+  const isPublicPath = [
+    '/',
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/verify-email',
+    '/about',
+    '/contact',
+    '/privacy',
+    '/terms',
+    '/faq',
+    '/calculator'
+  ].some((publicPath) => path.startsWith(publicPath));
+
+  // Get the token from cookies
+  const token = request.cookies.get('auth-token')?.value;
+
+  // If trying to access protected path without token
+  if (!isPublicPath && !token) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
-  
-  // Redirect to dashboard if trying to access auth pages while authenticated
-  if (isAuth && isAuthPage) {
+
+  // If trying to access auth pages with token
+  if (
+    isPublicPath &&
+    path.startsWith('/auth') &&
+    token &&
+    !path.includes('/reset-password')
+  ) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
-  
+
   return NextResponse.next();
 }
 
+// Configure which routes to run middleware on
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/auth/:path*',
-  ],
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)'
+  ]
 };
