@@ -12,6 +12,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import TokenSync from '@/lib/token-sync';
+import { SegmentViewStateNode } from 'next/dist/server/app-render/entry-base';
 
 interface AuthContextType {
   user: User | null;
@@ -67,10 +68,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  const setState = useAuthStore.setState;
 
   useEffect(() => {
     // Sync tokens from localStorage on app initialization
-    TokenSync.syncFromLocalStorage();
+    TokenSync.syncFromLocalStorage(setState);
   }, []);
 
   useEffect(() => {
