@@ -32,7 +32,7 @@ export default function LoginPage() {
     clearError();
 
     try {
-      await login(loginData.email, loginData.password);
+      const response = await login(loginData.email, loginData.password);
       setLoginSuccess(true);
 
       toast({
@@ -40,17 +40,8 @@ export default function LoginPage() {
         description: 'Login successful! Redirecting...'
       });
 
-      // Get the user data to check if admin
-      const { user } = useAuth();
-
-      // Redirect based on user role
-      setTimeout(() => {
-        if (user?.is_admin) {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
-      }, 1500);
+      // The AuthProvider will handle the redirect based on user role
+      // Don't try to redirect here, let the AuthProvider handle it
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -59,7 +50,6 @@ export default function LoginPage() {
       });
     }
   };
-
   const handleDemoLogin = async (type: 'user' | 'admin') => {
     clearError();
 

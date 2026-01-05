@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../../stores/auth.store';
 import { useAccountStore } from '../../stores/account.store';
 import { useCardStore } from '../../stores/card.store';
@@ -10,31 +10,37 @@ import { useTransactionStore } from '../../stores/transaction.store';
 import { useTransferStore } from '../../stores/transfer.store';
 import { useUserStore } from '../../stores/user.store';
 import { useVoiceStore } from '../../stores/voice.store';
-import { useDepositStore } from '../../stores/deposit.store'; // Corrected import
+import { useDepositStore } from '../../stores/deposit.store';
 
 interface StoreProviderProps {
   children: ReactNode;
 }
 
 export default function StoreProvider({ children }: StoreProviderProps) {
-  const { isAuthenticated, getProfile } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { getAccounts } = useAccountStore();
-  const { fetchUserCards } = useCardStore(); // Renamed
-  const { fetchUserLoans } = useLoanStore(); // Renamed
-  const { getReceipts } = useReceiptStore(); // Renamed
+  const { fetchUserCards } = useCardStore();
+  const { fetchUserLoans } = useLoanStore();
+  const { getReceipts } = useReceiptStore();
   const { getRecentTransactions } = useTransactionStore();
-  const { fetchUserTransfers, fetchTransferLimits } = useTransferStore(); // Renamed
+  const { fetchUserTransfers, fetchTransferLimits } = useTransferStore();
   const { getProfile: getUserProfile, getDashboard } = useUserStore();
-  const { getBalanceRequests } = useVoiceStore(); // Renamed
-  const { fetchUserDeposits } = useDepositStore(); // Renamed
+  const { getBalanceRequests } = useVoiceStore();
+  const { fetchUserDeposits } = useDepositStore();
 
-  // Initialize stores on mount
+  const [isInitialized, setIsInitialized] = useState(false);
+  const initializedRef = useRef(false);
+
+  // Initialize stores only once when authenticated
   useEffect(() => {
     const initializeStores = async () => {
-      if (isAuthenticated) {
+      if (isAuthenticated && user && !initializedRef.current) {
         try {
-          await getProfile();
-          await Promise.all([
+          initializedRef.current = true;
+          console.log('Initializing stores for user:', user.email);
+
+          // Initialize stores in sequence to avoid overwhelming the API
+          await Promise.allSettled([
             getAccounts(),
             fetchUserCards(),
             fetchUserLoans(),
@@ -45,29 +51,28 @@ export default function StoreProvider({ children }: StoreProviderProps) {
             getUserProfile(),
             getDashboard(),
             getBalanceRequests(),
-            fetchUserDeposits(),
+            fetchUserDeposits()
           ]);
+
+          setIsInitialized(true);
+          console.log('Stores initialized successfully');
         } catch (error) {
           console.error('Failed to initialize stores:', error);
+          initializedRef.current = false;
         }
       }
     };
 
     initializeStores();
+
+    // Reset when user logs out
+    if (!isAuthenticated) {
+      initializedRef.current = false;
+      setIsInitialized(false);
+    }
   }, [
-    isAuthenticated, 
-    getProfile, 
-    getAccounts, 
-    fetchUserCards, 
-    fetchUserLoans, 
-    getReceipts,
-    getRecentTransactions,
-    fetchUserTransfers,
-    fetchTransferLimits,
-    getUserProfile,
-    getDashboard,
-    getBalanceRequests,
-    fetchUserDeposits,
+    isAuthenticated,
+    user?.id // Only re-run if user ID changes, not on every auth state change
   ]);
 
   return <>{children}</>;
