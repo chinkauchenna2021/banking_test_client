@@ -149,6 +149,73 @@ class ApiClient {
     );
   }
 
+  // =================================================================
+  // User Routes (change from '/user/' to '/users/')
+  // =================================================================
+  public getUserProfile<T = any>(): Promise<T> {
+    return this.get<T>('/users/profile');
+  }
+
+  public updateUserProfile<T = any>(updateData: any): Promise<T> {
+    return this.put<T>('/users/profile', updateData);
+  }
+
+  public getUserDashboard<T = any>(): Promise<T> {
+    return this.get<T>('/users/dashboard');
+  }
+
+  public getUserActivity<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/users/activity', { params });
+  }
+
+  // =================================================================
+  // Transfer Routes
+  // =================================================================
+  public getTransferLimits<T = any>(): Promise<T> {
+    return this.get<T>('/transfers/limits'); // Changed from '/transfer/limits'
+  }
+
+  public initiateTransfer<T = any>(data: any): Promise<T> {
+    return this.post<T>('/transfers/transfer', data); // Changed from '/transfer/transfer'
+  }
+
+  public getTransferFees<T = any>(
+    amount: number,
+    currency: string,
+    type: string
+  ): Promise<T> {
+    return this.get<T>('/transfers/fees', {
+      // Changed from '/transfer/fees'
+      params: { amount, currency, type }
+    });
+  }
+
+  // =================================================================
+  // Transaction Routes
+  // =================================================================
+  public getRecentTransactions<T = any>(limit: number = 10): Promise<T> {
+    return this.get<T>('/transactions/recent', { params: { limit } });
+  }
+
+  // =================================================================
+  // Other Routes (these should now work after adding them to api.routes.ts)
+  // =================================================================
+  public getCards<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/cards', { params });
+  }
+
+  public getLoans<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/loans', { params });
+  }
+
+  public getReceipts<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/receipts', { params });
+  }
+
+  public getManualDeposits<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/manual-deposits/history', { params });
+  }
+
   private extractTokensFromResponse(responseData: any) {
     let accessToken = null;
     let refreshToken = null;
@@ -341,9 +408,9 @@ class ApiClient {
     return this.post<T>('/manual-deposits', data);
   }
 
-  public getManualDeposits<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/manual-deposits/history', { params });
-  }
+  // public getManualDeposits<T = any>(params: any = {}): Promise<T> {
+  //   return this.get<T>('/manual-deposits/history', { params });
+  // }
 
   public uploadDepositProof<T = any>(
     depositId: string,
@@ -390,13 +457,13 @@ class ApiClient {
     });
   }
 
-  public getTransferLimits<T = any>(): Promise<T> {
-    return this.get<T>('/transfer/limits');
-  }
+  // public getTransferLimits<T = any>(): Promise<T> {
+  //   return this.get<T>('/transfer/limits');
+  // }
 
-  public initiateTransfer<T = any>(data: any): Promise<T> {
-    return this.post<T>('/transfer/transfer', data);
-  }
+  // public initiateTransfer<T = any>(data: any): Promise<T> {
+  //   return this.post<T>('/transfer/transfer', data);
+  // }
 
   public getUserTransfers<T = any>(params: any = {}): Promise<T> {
     return this.get<T>('/transfers', { params });
@@ -421,15 +488,15 @@ class ApiClient {
     return this.post<T>(`/transfers/scheduled/${transferId}/cancel`);
   }
 
-  public getTransferFees<T = any>(
-    amount: number,
-    currency: string,
-    type: string
-  ): Promise<T> {
-    return this.get<T>('/transfer/fees', {
-      params: { amount, currency, type }
-    });
-  }
+  // public getTransferFees<T = any>(
+  //   amount: number,
+  //   currency: string,
+  //   type: string
+  // ): Promise<T> {
+  //   return this.get<T>('/transfer/fees', {
+  //     params: { amount, currency, type }
+  //   });
+  // }
 
   public getTransferDetails<T = any>(transferId: string): Promise<T> {
     return this.get<T>(`/transfers/${transferId}`);
@@ -819,6 +886,32 @@ class ApiClient {
         'Content-Type': 'multipart/form-data'
       }
     });
+  }
+
+  // In api-client.ts, update/add these methods:
+
+  public getTransactionStats<T = any>(): Promise<T> {
+    return this.get<T>('/transactions/stats');
+  }
+
+  public searchTransactions<T = any>(
+    query: string,
+    limit: number = 20
+  ): Promise<T> {
+    return this.get<T>('/transactions/search', {
+      params: { query, limit }
+    });
+  }
+
+  public getDashboardTransactions<T = any>(
+    limit: number = 5,
+    days: number = 7,
+    accountId?: string
+  ): Promise<T> {
+    const params: any = { limit, days };
+    if (accountId) params.account_id = accountId;
+
+    return this.get<T>('/transactions/dashboard', { params });
   }
 }
 
