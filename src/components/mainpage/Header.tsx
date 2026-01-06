@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
@@ -122,11 +121,11 @@ const MenuItem: React.FC<{ item: MenuItem }> = ({ item }) => {
   );
 };
 
-// Login Button Component
+// Login Button Component for desktop
 const LoginButton = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoginDropdownOpen, setIsLoginDropdownOpen] = useState(false);
-  const { user, isAuthenticated, isLoading, error } = useAuth();
+  const { user, isAuthenticated, isLoading, error, logout } = useAuth();
   const router = useRouter();
 
   // Simulating authentication state
@@ -146,17 +145,13 @@ const LoginButton = () => {
   };
 
   const handleLogout = () => {
-    // Your logout logic here
-    console.log('Logout clicked');
-    setIsLoggedIn(false);
-    localStorage.removeItem('authToken');
-    setIsLoginDropdownOpen(false);
+    logout();
   };
 
   const handleProfile = () => {
     console.log('Profile clicked');
     // Navigate to profile page
-    window.location.href = '/profile';
+    router.push('/profile');
   };
 
   return (
@@ -167,22 +162,10 @@ const LoginButton = () => {
           onMouseEnter={() => setIsLoginDropdownOpen(true)}
           onMouseLeave={() => setIsLoginDropdownOpen(false)}
         >
-          <button className='btn-login user-avatar'>
-            <span className='icon-user'></span>
-            <span>My Account</span>
+          <button onClick={handleLogout} className='dropdown-item'>
+            <span className='icon-logout'></span>
+            Logout
           </button>
-          {isLoginDropdownOpen && (
-            <div className='login-dropdown-menu'>
-              <button onClick={handleProfile} className='dropdown-item'>
-                <span className='icon-settings'></span>
-                Profile
-              </button>
-              <button onClick={handleLogout} className='dropdown-item'>
-                <span className='icon-logout'></span>
-                Logout
-              </button>
-            </div>
-          )}
         </div>
       ) : (
         <button onClick={handleLogin} className='btn-login'>
@@ -262,9 +245,55 @@ const LoginButton = () => {
   );
 };
 
+// Mobile Login Menu Item - Only shows on mobile
+const MobileLoginMenuItem = () => {
+  const pathname = usePathname();
+  const isActive = pathname === '/auth/login';
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (isAuthenticated) {
+      router.push('/profile');
+    } else {
+      router.push('/auth/login');
+    }
+  };
+
+  return (
+    <li className={`mobile-only ${isActive ? 'current' : ''}`}>
+      <Link
+        href={isAuthenticated ? '/profile' : '/auth/login'}
+        style={{ fontSize: '16px' }}
+        className={isActive ? 'current' : ''}
+        onClick={handleClick}
+      >
+        {isAuthenticated ? 'My Account' : 'Login'}
+      </Link>
+    </li>
+  );
+};
+
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
+
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Initial check
+    checkIfMobile();
+
+    // Add event listener
+    window.addEventListener('resize', checkIfMobile);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   const homeShowcaseItems = [
     {
@@ -283,10 +312,6 @@ export default function Header() {
       title: 'Home',
       href: '/'
     },
-    // {
-    //   title: 'Faq',
-    //   href: '/faq',
-    // },
     {
       title: 'About',
       href: '/about'
@@ -295,6 +320,7 @@ export default function Header() {
       title: 'Contact Us',
       href: '/contact'
     }
+    // Note: Login is NOT included here for desktop - it will only show in mobile menu
   ];
 
   return (
@@ -310,12 +336,9 @@ export default function Header() {
               </div>
               <div className='header-menu-style1'>
                 <ul>
-                  {/* <li><a href="#">Careers</a></li> */}
                   <li>
                     <Link href='/faq'>Faq's</Link>
                   </li>
-                  {/* <li><a href="#">Offers</a></li> */}
-                  {/* <li><a href="#">Calendar</a></li> */}
                   <li>
                     <Link href='/calculator'>Calculator</Link>
                   </li>
@@ -387,7 +410,6 @@ export default function Header() {
                     <div className='flex w-full flex-row items-center justify-start space-x-4'>
                       <img
                         className='h-6 w-14 md:h-10 md:w-32'
-                        // src='/assets/images/resources/logo-3.png'
                         src='/assets/images/shapes/card-banner-area-bg.png'
                         alt='Fidelitybank Logo'
                       />
@@ -416,14 +438,18 @@ export default function Header() {
                   </a>
 
                   <ul className='main-menu__list'>
+                    {/* Regular menu items - show on all screens */}
                     {mainMenuItems.map((item, index) => (
                       <MenuItem key={index} item={item} />
                     ))}
+
+                    {/* Mobile-only Login menu item */}
+                    {isMobile && <MobileLoginMenuItem />}
                   </ul>
                 </div>
               </div>
 
-              {/* Right Section - Now includes Login Button */}
+              {/* Right Section - Desktop Login Button (hidden on mobile) */}
               <div className='main-menu-style3-right'>
                 <div className='phone-number-box-style1'>
                   <div className='icon'>
@@ -442,315 +468,30 @@ export default function Header() {
                   </a>
                 </div>
 
-                {/* Added Login Button */}
-                <LoginButton />
+                {/* Desktop Login Button - hidden on mobile */}
+                {!isMobile && <LoginButton />}
               </div>
             </div>
           </div>
         </div>
       </nav>
+
+      {/* Mobile Menu Styles */}
+      <style jsx global>{`
+        /* Hide mobile login item on desktop */
+        @media (min-width: 768px) {
+          .mobile-only {
+            display: none !important;
+          }
+        }
+
+        /* Hide desktop login button on mobile */
+        @media (max-width: 767px) {
+          .main-menu-style3-right .login-button-container {
+            display: none !important;
+          }
+        }
+      `}</style>
     </header>
   );
 }
-
-//  'use client'
-
-// import { useState } from 'react'
-// import Link from 'next/link'
-// import Image from 'next/image'
-
-// interface MenuItem {
-//   title: string
-//   href: string
-//   submenu?: MenuItem[]
-// }
-
-// interface MegaMenuProps {
-//   items: Array<{
-//     title: string
-//     image: string
-//     multiPageLink: string
-//     onePageLink: string
-//     multiPageText: string
-//     onePageText: string
-//   }>
-// }
-
-// const MegaMenu: React.FC<MegaMenuProps> = ({ items }) => {
-//   return (
-//     <div className="megamenu-content-box">
-//       <div className="container">
-//         <div className="megamenu-content-box__inner">
-//           <div className="row">
-//             {items.map((item, index) => (
-//               <div className="col-lg-3" key={index}>
-//                 <div className="home-showcase__item">
-//                   <div className="home-showcase__image">
-//                     <img
-//                       src={`/assets/images/home-showcase/${item.image}`}
-//                       alt={item.title}
-//                     />
-//                     <div className="home-showcase__buttons">
-//                       <Link
-//                         href={item.multiPageLink}
-//                         className="btn-one home-showcase__buttons__item top"
-//                       >
-//                         <span className="txt">{item.multiPageText}</span>
-//                       </Link>
-//                       <Link
-//                         href={item.onePageLink}
-//                         className="btn-one home-showcase__buttons__item"
-//                       >
-//                         <span className="txt">{item.onePageText}</span>
-//                       </Link>
-//                     </div>
-//                   </div>
-//                   <h3 className="home-showcase__title">{item.title}</h3>
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
-
-// export default function Header() {
-//   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-
-//   const homeShowcaseItems = [
-//     {
-//       title: 'Home Page One',
-//       image: 'home-showcase-1-1.jpg',
-//       multiPageLink: '/',
-//       onePageLink: '/one-page',
-//       multiPageText: 'Multi Page',
-//       onePageText: 'One Page'
-//     },
-//     // Add other items similarly
-//   ]
-
-//   const mainMenuItems: MenuItem[] = [
-//     {
-//       title: 'Home',
-//       href: '/',
-//     },
-//     // {
-//     //   title: 'Services',
-//     //   href: '#',
-//     //   submenu: [
-//     //     {
-//     //       title: 'Cards',
-//     //       href: '/services/cards',
-//     //     },
-
-//     //     {
-//     //       title: 'Loans',
-//     //       href: '/services/loans',
-//     //     },
-
-//     //     {
-//     //       title: 'Personal Account',
-//     //       href: '/services/personalaccount',
-//     //     },
-//     //     // Add other service categories
-//     //   ]
-//     // },
-//     {
-//       title: 'Faq',
-//       href: '/faq',
-//       // submenu: [
-//         // {
-//         //   title: 'Accounts',
-//         //   href: '#',
-//         //   submenu: [
-//         //     { title: 'All Accounts', href: '/accounts' },
-//         //     { title: 'Savings Account', href: '/account-savings' },
-//         //     // Add other submenu items
-//           // ]
-//         // },
-
-//         // Add other service categories
-//       // ]
-//     },
-
-//      {
-//       title: 'About',
-//       href: '/about',
-//     },
-//      {
-//       title: 'Contact Us',
-//       href: '/contact',
-//     },
-//   ]
-
-//   return (
-//     <header className="main-header main-header-style3">
-//       {/* Top Header */}
-//       <div className="main-header-style3__top">
-//         <div className="auto-container">
-//           <div className="outer-box">
-//             {/* Left Section */}
-//             <div className="main-header-style3__top-left">
-//               <div className="header-btn-one">
-//                 <a href="#">Pay Online</a>
-//               </div>
-//               <div className="header-menu-style1">
-//                 <ul>
-//                   {/* <li><a href="#">Careers</a></li>
-//                   <li><a href="#">Faq's</a></li>
-//                   <li><a href="#">Offers</a></li>
-//                   <li><a href="#">Calendar</a></li>
-//                   <li><a href="#">Calculator</a></li> */}
-//                 </ul>
-//               </div>
-//             </div>
-
-//             {/* Right Section */}
-//             <div className="main-header-style3__top-right">
-//               <div className="header-contact-info-style1">
-//                 <ul>
-//                   <li><span className="icon-map"></span> 12 Red Rose, LA 90010</li>
-//                   <li><span className="icon-clock"></span> 9am to 5pm, Sun Holiday</li>
-//                 </ul>
-//               </div>
-//               <div className="header-social-link-style1">
-//                 <ul className="clearfix">
-//                   <li>
-//                     <a href="#">
-//                       <i className="fab fa-youtube"></i>
-//                     </a>
-//                   </li>
-//                   <li>
-//                     <a href="#">
-//                       <i className="fab fa-instagram"></i>
-//                     </a>
-//                   </li>
-//                   <li>
-//                     <a href="#">
-//                       <i className="fab fa-twitter"></i>
-//                     </a>
-//                   </li>
-//                   <li>
-//                     <a href="#">
-//                       <i className="fab fa-facebook-f"></i>
-//                     </a>
-//                   </li>
-//                 </ul>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Main Navigation */}
-//       <nav className="main-menu main-menu-style3">
-//         <div className="main-menu__wrapper clearfix">
-//           <div className="container">
-//             <div className="main-menu__wrapper-inner">
-
-//               {/* Left Section */}
-//               <div className="main-menu-style3-left">
-//                 <div className="header-logon-box">
-//                   <div className="icon">
-//                     <span className="icon-home-button"></span>
-//                   </div>
-//                   <div className="select-box">
-//                     <select className="wide">
-//                       <option value="login">Login</option>
-//                       <option value="register">Register</option>
-//                     </select>
-//                   </div>
-//                 </div>
-//                 <div className="logo-box-style3">
-//                   <Link href="/">
-//                     <img
-//                       src="/assets/images/resources/logo-3.png"
-//                       alt="Finbank Logo"
-//                     />
-//                   </Link>
-//                 </div>
-//               </div>
-
-//               {/* Middle Section - Main Menu */}
-//               <div className="main-menu-style3-middle">
-//                 <div className="main-menu-box">
-//                   <a
-//                     href="#"
-//                     className="mobile-nav__toggler"
-//                     onClick={(e) => {
-//                       e.preventDefault()
-//                       setIsMobileMenuOpen(!isMobileMenuOpen)
-//                     }}
-//                   >
-//                     <i className="icon-menu"></i>
-//                   </a>
-
-//                   <ul className="main-menu__list">
-//                     {mainMenuItems.map((item, index) => (
-//                       <MenuItem key={index} item={item} />
-//                     ))}
-//                   </ul>
-//                 </div>
-//               </div>
-
-//               {/* Right Section */}
-//               <div className="main-menu-style3-right">
-//                 <div className="phone-number-box-style1">
-//                   <div className="icon">
-//                     <span className="icon-headphones"></span>
-//                   </div>
-//                   <h5>Toll Free</h5>
-//                   <h3><a href="tel:+80012345678">+800 123 456 78</a></h3>
-//                 </div>
-
-//                 <div className="box-search-style2">
-//                   <a href="#" className="search-toggler">
-//                     <span className="icon-search"></span>
-//                     Search
-//                   </a>
-//                 </div>
-//               </div>
-
-//             </div>
-//           </div>
-//         </div>
-//       </nav>
-//     </header>
-//   )
-// }
-
-// // MenuItem Component
-// const MenuItem: React.FC<{ item: MenuItem }> = ({ item }) => {
-//   const [isOpen, setIsOpen] = useState(false)
-
-//   if (item.submenu) {
-//     return (
-//       <li
-//         className={`dropdown ${item.title === 'Home' ? 'megamenu' : ''}`}
-//         onMouseEnter={() => setIsOpen(true)}
-//         onMouseLeave={() => setIsOpen(false)}
-//       >
-//         <a href={item.href}>{item.title}</a>
-//         <ul style={{ display: isOpen ? 'block' : 'none' }}>
-//           {item.title === 'Home' ? (
-//             <li>
-//               <MegaMenu items={[]} /> {/* Pass your items here */}
-//             </li>
-//           ) : (
-//             item.submenu.map((subItem, subIndex) => (
-//               <MenuItem key={subIndex} item={subItem} />
-//             ))
-//           )}
-//         </ul>
-//       </li>
-//     )
-//   }
-
-//   return (
-//     <li>
-//       <Link href={item.href}>{item.title}</Link>
-//     </li>
-//   )
-// }
