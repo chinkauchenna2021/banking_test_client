@@ -201,7 +201,7 @@ class ApiClient {
   // Other Routes (these should now work after adding them to api.routes.ts)
   // =================================================================
   public getCards<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/cards', { params });
+    return this.get<T>('/cards/cards', { params });
   }
 
   public getLoans<T = any>(params: any = {}): Promise<T> {
