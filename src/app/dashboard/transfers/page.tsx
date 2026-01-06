@@ -128,40 +128,6 @@ export default function TransfersPage() {
     }
   };
 
-  // const handleTransfer = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setIsSubmitting(true);
-
-  //   try {
-  //     await quickTransfer(
-  //       BigInt(transferData.fromAccount),
-  //       transferData.toAccount,
-  //       parseFloat(transferData.amount),
-  //       transferData.description,
-  //       transferData.transactionPin
-  //     );
-
-  //     // Reset form
-  //     setTransferData({
-  //       fromAccount: '',
-  //       toAccount: '',
-  //       amount: '',
-  //       description: '',
-  //       transactionPin: '',
-  //       recipientBank: '',
-  //       recipientAddress: '',
-  //       recipientRoutingNumber: ''
-  //     });
-
-  //     await getTransfers();
-
-  //   } catch (error) {
-  //     console.error('Transfer failed:', error);
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
-
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -581,6 +547,62 @@ export default function TransfersPage() {
                       </div>
                     </div>
 
+                    {/* ADD THE THREE NEW INPUTS HERE */}
+                    <div className='space-y-4 rounded-lg border p-4'>
+                      <h3 className='font-medium'>
+                        Recipient Bank Details (Optional)
+                      </h3>
+                      <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                        <div className='space-y-2'>
+                          <Label htmlFor='recipientBank'>Bank Name</Label>
+                          <Input
+                            id='recipientBank'
+                            placeholder='e.g., Chase Bank, Bank of America'
+                            value={transferData.recipientBank}
+                            onChange={(e) =>
+                              setTransferData({
+                                ...transferData,
+                                recipientBank: e.target.value
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className='space-y-2'>
+                          <Label htmlFor='recipientRoutingNumber'>
+                            Routing Number
+                          </Label>
+                          <Input
+                            id='recipientRoutingNumber'
+                            placeholder='e.g., 021000021'
+                            value={transferData.recipientRoutingNumber}
+                            onChange={(e) =>
+                              setTransferData({
+                                ...transferData,
+                                recipientRoutingNumber: e.target.value
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className='space-y-2'>
+                        <Label htmlFor='recipientAddress'>Bank Address</Label>
+                        <Textarea
+                          id='recipientAddress'
+                          placeholder='Full bank address (street, city, state, zip)'
+                          rows={2}
+                          value={transferData.recipientAddress}
+                          onChange={(e) =>
+                            setTransferData({
+                              ...transferData,
+                              recipientAddress: e.target.value
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
                     <div className='space-y-3'>
                       <Label htmlFor='amount'>Amount</Label>
                       <div className='relative'>
@@ -770,6 +792,8 @@ export default function TransfersPage() {
                       <TableHead>From/To</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Bank Details</TableHead>{' '}
+                      {/* ADDED THIS COLUMN */}
                       <TableHead className='text-right'>Reference</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -809,6 +833,20 @@ export default function TransfersPage() {
                               {transfer.status}
                             </div>
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {transfer.recipient_bank && (
+                            <div className='text-muted-foreground text-sm'>
+                              <div className='font-medium'>
+                                {transfer.recipient_bank}
+                              </div>
+                              {transfer.recipient_routing_number && (
+                                <div className='text-xs'>
+                                  Routing: {transfer.recipient_routing_number}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className='text-right'>
                           <div className='flex items-center justify-end gap-2'>
