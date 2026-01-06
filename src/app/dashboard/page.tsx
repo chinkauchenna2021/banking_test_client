@@ -187,7 +187,7 @@ export default function DashboardPage() {
               </div>
               <p className='text-muted-foreground text-xs'>
                 Available:{' '}
-                {formatCurrency(defaultAccount?.available_balance || 0)}
+                {formatCurrency(Number(defaultAccount?.available_balance) || 0)}
               </p>
             </CardContent>
           </Card>
@@ -325,10 +325,7 @@ export default function DashboardPage() {
                       </div>
                       <div className='text-right'>
                         <div className='font-bold'>
-                          {formatCurrency(
-                            Number(account.balance),
-                            account.currency
-                          )}
+                          {formatCurrency(Number(account.balance))}
                         </div>
                         <Badge variant='outline'>{account.account_type}</Badge>
                       </div>
@@ -408,10 +405,7 @@ export default function DashboardPage() {
                         }`}
                       >
                         {transaction.type === 'deposit' ? '+' : '-'}
-                        {formatCurrency(
-                          transaction.amount,
-                          transaction.currency
-                        )}
+                        {formatCurrency(transaction.amount)}
                       </div>
                       <Badge variant='outline'>{transaction.status}</Badge>
                     </div>
@@ -464,14 +458,12 @@ export default function DashboardPage() {
         open={showTransferModal}
         onOpenChange={setShowTransferModal}
         accounts={accounts}
-        defaultAccount={defaultAccount}
       />
 
       <DepositModal
         open={showDepositModal}
         onOpenChange={setShowDepositModal}
         accounts={accounts}
-        defaultAccount={defaultAccount}
       />
     </PageContainer>
   );
