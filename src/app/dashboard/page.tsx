@@ -405,7 +405,7 @@ export default function DashboardPage() {
                         }`}
                       >
                         {transaction.type === 'deposit' ? '+' : '-'}
-                        {formatCurrency(transaction.amount)}
+                        {formatCurrency(Number(transaction.amount))}
                       </div>
                       <Badge variant='outline'>{transaction.status}</Badge>
                     </div>
