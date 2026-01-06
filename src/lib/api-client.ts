@@ -565,14 +565,6 @@ class ApiClient {
     });
   }
 
-  public approveLoan<T = any>(loanId: string, notes: string): Promise<T> {
-    return this.post<T>(`/admin/loans/${loanId}/approve`, { notes });
-  }
-
-  public rejectLoan<T = any>(loanId: string, reason: string): Promise<T> {
-    return this.post<T>(`/admin/loans/${loanId}/reject`, { reason });
-  }
-
   // =================================================================
   // Cards
   // =================================================================
@@ -582,21 +574,6 @@ class ApiClient {
 
   public getUserCards<T = any>(params: any = {}): Promise<T> {
     return this.get<T>('/cards', { params });
-  }
-
-  public getPendingCardRequests<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/admin/cards/pending', { params });
-  }
-
-  public approveCardRequest<T = any>(cardId: string): Promise<T> {
-    return this.post<T>(`/admin/cards/${cardId}/approve`);
-  }
-
-  public rejectCardRequest<T = any>(
-    cardId: string,
-    reason: string
-  ): Promise<T> {
-    return this.post<T>(`/admin/cards/${cardId}/reject`, { reason });
   }
 
   public getCardTransactions<T = any>(
@@ -789,17 +766,6 @@ class ApiClient {
   // =================================================================
   // User Management (Admin)
   // =================================================================
-  public getUsers<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/admin/users', { params });
-  }
-
-  public getUserDetails<T = any>(userId: string): Promise<T> {
-    return this.get<T>(`/admin/users/${userId}`);
-  }
-
-  public updateUserStatus<T = any>(userId: string, status: string): Promise<T> {
-    return this.put<T>(`/admin/users/${userId}/status`, { status });
-  }
 
   public updateUserRole<T = any>(userId: string, role: string): Promise<T> {
     return this.put<T>(`/admin/users/${userId}/role`, { role });
@@ -912,6 +878,197 @@ class ApiClient {
     if (accountId) params.account_id = accountId;
 
     return this.get<T>('/transactions/dashboard', { params });
+  }
+
+  // =================================================================
+  // Enhanced Admin Routes - Based on your router
+  // =================================================================
+
+  // Dashboard
+  public getDashboardStats<T = any>(): Promise<T> {
+    return this.get<T>('/admin/dashboard');
+  }
+
+  public getEnhancedDashboardStats<T = any>(): Promise<T> {
+    return this.get<T>('/admin/dashboard/enhanced');
+  }
+
+  // User Management
+  public getUsers<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/users', { params });
+  }
+
+  public getEnhancedUsers<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/users/enhanced', { params });
+  }
+
+  public getUserDetails<T = any>(userId: string): Promise<T> {
+    return this.get<T>(`/admin/users/${userId}/details`);
+  }
+
+  public updateUserStatus<T = any>(
+    userId: string,
+    status: string,
+    reason?: string
+  ): Promise<T> {
+    return this.patch<T>(`/admin/users/${userId}/status`, { status, reason });
+  }
+
+  public updateAdminUserProfile<T = any>(
+    userId: string,
+    data: any
+  ): Promise<T> {
+    return this.put<T>(`/admin/users/${userId}/profile`, data);
+  }
+
+  public deleteUser<T = any>(userId: string, reason?: string): Promise<T> {
+    return this.delete<T>(`/admin/users/${userId}`, { data: { reason } });
+  }
+
+  public restoreUser<T = any>(userId: string): Promise<T> {
+    return this.post<T>(`/admin/users/${userId}/restore`);
+  }
+
+  public updateUserBalance<T = any>(
+    userId: string,
+    data: { amount: number; reason: string; type: 'add' | 'deduct' | 'set' }
+  ): Promise<T> {
+    return this.post<T>(`/admin/users/${userId}/balance`, data);
+  }
+
+  public bulkUpdateUserStatus<T = any>(data: {
+    userIds: string[];
+    status: string;
+    reason?: string;
+  }): Promise<T> {
+    return this.post<T>('/admin/users/bulk/status', data);
+  }
+
+  // Deposit Management
+  public getDeposits<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/deposits', { params });
+  }
+
+  public getEnhancedDeposits<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/deposits/enhanced', { params });
+  }
+
+  public getDepositDetails<T = any>(depositId: string): Promise<T> {
+    return this.get<T>(`/admin/deposits/${depositId}/details`);
+  }
+
+  public confirmDeposit<T = any>(
+    depositId: string,
+    notes?: string
+  ): Promise<T> {
+    return this.post<T>(`/admin/deposits/${depositId}/confirm`, { notes });
+  }
+
+  public updateDepositEvidence<T = any>(
+    depositId: string,
+    evidence: any
+  ): Promise<T> {
+    return this.put<T>(`/admin/deposits/${depositId}/evidence`, { evidence });
+  }
+
+  public verifyDepositEvidence<T = any>(
+    depositId: string,
+    data: { verified: boolean; notes?: string }
+  ): Promise<T> {
+    return this.post<T>(`/admin/deposits/${depositId}/verify`, data);
+  }
+
+  // Crypto Accounts Management
+  public getCryptoAccounts<T = any>(params?: { user_id?: string }): Promise<T> {
+    return this.get<T>('/admin/crypto-accounts', { params });
+  }
+
+  public verifyCryptoAccount<T = any>(
+    paymentMethodId: string,
+    data: { verified: boolean; notes?: string }
+  ): Promise<T> {
+    return this.post<T>(
+      `/admin/crypto-accounts/${paymentMethodId}/verify`,
+      data
+    );
+  }
+
+  // Loan Management
+  public getAdminLoans<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/loans', { params });
+  }
+
+  public approveLoan<T = any>(loanId: string, notes?: string): Promise<T> {
+    return this.post<T>(`/admin/loans/${loanId}/approve`, { notes });
+  }
+
+  public rejectLoan<T = any>(loanId: string, reason: string): Promise<T> {
+    return this.post<T>(`/admin/loans/${loanId}/reject`, { reason });
+  }
+
+  // Card Management
+  public getPendingCardRequests<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/cards/pending', { params });
+  }
+
+  public approveCardRequest<T = any>(cardId: string): Promise<T> {
+    return this.post<T>(`/admin/cards/${cardId}/approve`);
+  }
+
+  public rejectCardRequest<T = any>(
+    cardId: string,
+    reason: string
+  ): Promise<T> {
+    return this.post<T>(`/admin/cards/${cardId}/reject`, { reason });
+  }
+
+  // Approval Queue
+  public getApprovalQueue<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/approvals', { params });
+  }
+
+  public processApproval<T = any>(
+    approvalId: string,
+    data: { action: string; notes?: string }
+  ): Promise<T> {
+    return this.post<T>(`/admin/approvals/${approvalId}/process`, data);
+  }
+
+  // Transaction Management
+  public getTransactions<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/transactions', { params });
+  }
+
+  // Activity Monitoring
+  public getUserActivities<T = any>(params?: {
+    user_id?: string;
+    limit?: number;
+  }): Promise<T> {
+    return this.get<T>('/admin/user-activities', { params });
+  }
+
+  public getAdminActionLogs<T = any>(params?: {
+    admin_id?: string;
+    limit?: number;
+  }): Promise<T> {
+    return this.get<T>('/admin/admin-action-logs', { params });
+  }
+
+  public getAuditLogs<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/audit-logs', { params });
+  }
+
+  // System Management
+  public getSystemAlerts<T = any>(): Promise<T> {
+    return this.get<T>('/admin/system-alerts');
+  }
+
+  public generateReport<T = any>(options: any): Promise<T> {
+    return this.post<T>('/admin/reports/generate', options);
+  }
+
+  public getSystemHealth<T = any>(): Promise<T> {
+    return this.get<T>('/admin/system-health');
   }
 }
 

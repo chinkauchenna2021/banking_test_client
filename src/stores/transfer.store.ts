@@ -20,6 +20,9 @@ export interface ClientTransfer {
   scheduled_for: Date | null;
   created_at: Date;
   updated_at: Date;
+  recipient_bank?: string;
+  recipient_address?: string;
+  recipient_routing_number?: string;
   // Add other properties as needed by the client
 }
 
@@ -33,6 +36,9 @@ export interface CreateTransferDto {
   description?: string;
   transaction_pin?: string;
   scheduled_for?: Date;
+  recipient_bank?: string;
+  recipient_address?: string;
+  recipient_routing_number?: string;
 }
 
 // Client-side definition for TransferQueryParams
@@ -55,10 +61,10 @@ interface ValidatedAccount {
 }
 
 interface TransferLimits {
-    daily_limit: number;
-    daily_used: number;
-    daily_remaining: number;
-    per_transaction_limit: number;
+  daily_limit: number;
+  daily_used: number;
+  daily_remaining: number;
+  per_transaction_limit: number;
 }
 
 interface TransferState {
@@ -79,7 +85,11 @@ interface TransferState {
   cancelTransfer: (transferId: string, reason: string) => Promise<void>; // Added
   scheduleTransfer: (data: CreateTransferDto) => Promise<any>; // Added
   cancelScheduledTransfer: (transferId: string) => Promise<void>; // Added
-  calculateFees: (amount: number, currency: string, type: string) => Promise<any>; // Added
+  calculateFees: (
+    amount: number,
+    currency: string,
+    type: string
+  ) => Promise<any>; // Added
   getTransferDetails: (transferId: string) => Promise<UserTransfer>; // Added
 
   clearValidatedAccount: () => void;
@@ -102,7 +112,9 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   validateAccount: async (accountNumber) => {
     set({ isLoading: true, error: null, validatedAccount: null });
     try {
-      const response = await apiClient.validateRecipientAccount<{ data: ValidatedAccount }>(accountNumber);
+      const response = await apiClient.validateRecipientAccount<{
+        data: ValidatedAccount;
+      }>(accountNumber);
       set({ validatedAccount: response.data, isLoading: false });
       return response.data;
     } catch (error: any) {
@@ -130,7 +142,9 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   fetchTransferLimits: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getTransferLimits<{ data: TransferLimits }>();
+      const response = await apiClient.getTransferLimits<{
+        data: TransferLimits;
+      }>();
       set({ transferLimits: response.data, isLoading: false });
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
@@ -141,11 +155,14 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   fetchUserTransfers: async (params) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getUserTransfers<{ data: UserTransfer[], pagination: any }>(params);
+      const response = await apiClient.getUserTransfers<{
+        data: UserTransfer[];
+        pagination: any;
+      }>(params);
       set({
         userTransfers: response.data,
         pagination: response.pagination,
-        isLoading: false,
+        isLoading: false
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
@@ -156,10 +173,13 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   fetchScheduledTransfers: async (params) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getScheduledTransfers<{ data: UserTransfer[], pagination: any }>(params);
+      const response = await apiClient.getScheduledTransfers<{
+        data: UserTransfer[];
+        pagination: any;
+      }>(params);
       set({
         scheduledTransfers: response.data,
-        isLoading: false,
+        isLoading: false
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
@@ -210,7 +230,11 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   calculateFees: async (amount, currency, type) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getTransferFees<{ data: any }>(amount, currency, type);
+      const response = await apiClient.getTransferFees<{ data: any }>(
+        amount,
+        currency,
+        type
+      );
       set({ transferFees: response.data, isLoading: false });
       return response.data;
     } catch (error: any) {
@@ -223,7 +247,9 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   getTransferDetails: async (transferId) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getTransferDetails<{ data: UserTransfer }>(transferId);
+      const response = await apiClient.getTransferDetails<{
+        data: UserTransfer;
+      }>(transferId);
       set({ isLoading: false });
       return response.data;
     } catch (error: any) {
@@ -231,5 +257,5 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       set({ error: errorMessage, isLoading: false });
       throw new Error(errorMessage);
     }
-  },
+  }
 }));

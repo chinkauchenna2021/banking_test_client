@@ -1,10 +1,10 @@
-"use client"
+'use client';
 import { useEffect, useCallback } from 'react';
-import { 
-  useTransferStore, 
-  UserTransfer, 
-  CreateTransferDto, 
-  TransferQueryParams 
+import {
+  useTransferStore,
+  UserTransfer,
+  CreateTransferDto,
+  TransferQueryParams
 } from '../stores/transfer.store';
 
 export const useTransfer = () => {
@@ -27,7 +27,7 @@ export const useTransfer = () => {
     validateAccount,
     fetchTransferLimits: getTransferLimits, // Renamed
     // setCurrentTransfer, // Not directly exposed by the store
-    clearError,
+    clearError
     // setLoading, // Not directly exposed by the store
   } = useTransferStore();
 
@@ -53,41 +53,46 @@ export const useTransfer = () => {
 
   // Filter sent transfers
   const getSentTransfers = useCallback((): UserTransfer[] => {
-    return transfers.filter(transfer => 
-      transfer.status !== 'cancelled' && transfer.scheduled_for === null // Use null for optional Date
+    return transfers.filter(
+      (transfer) =>
+        transfer.status !== 'cancelled' && transfer.scheduled_for === null // Use null for optional Date
     );
   }, [transfers]);
 
   // Filter received transfers
   const getReceivedTransfers = useCallback((): UserTransfer[] => {
-    return transfers.filter(transfer => 
-      transfer.status !== 'cancelled' && transfer.scheduled_for === null
+    return transfers.filter(
+      (transfer) =>
+        transfer.status !== 'cancelled' && transfer.scheduled_for === null
     );
   }, [transfers]);
 
   // Filter pending transfers
   const getPendingTransfers = useCallback((): UserTransfer[] => {
-    return transfers.filter(transfer => transfer.status === 'pending');
+    return transfers.filter((transfer) => transfer.status === 'pending');
   }, [transfers]);
 
   // Filter completed transfers
   const getCompletedTransfers = useCallback((): UserTransfer[] => {
-    return transfers.filter(transfer => transfer.status === 'completed');
+    return transfers.filter((transfer) => transfer.status === 'completed');
   }, [transfers]);
 
   // Filter scheduled transfers by date
-  const getScheduledTransfersByDate = useCallback((date: Date): UserTransfer[] => {
-    return scheduledTransfers.filter(transfer => {
-      if (!transfer.scheduled_for) return false;
-      const scheduledDate = new Date(transfer.scheduled_for);
-      return scheduledDate.toDateString() === date.toDateString();
-    });
-  }, [scheduledTransfers]);
+  const getScheduledTransfersByDate = useCallback(
+    (date: Date): UserTransfer[] => {
+      return scheduledTransfers.filter((transfer) => {
+        if (!transfer.scheduled_for) return false;
+        const scheduledDate = new Date(transfer.scheduled_for);
+        return scheduledDate.toDateString() === date.toDateString();
+      });
+    },
+    [scheduledTransfers]
+  );
 
   // Get upcoming scheduled transfers
   const getUpcomingScheduledTransfers = useCallback((): UserTransfer[] => {
     const now = new Date();
-    return scheduledTransfers.filter(transfer => {
+    return scheduledTransfers.filter((transfer) => {
       if (!transfer.scheduled_for) return false;
       return new Date(transfer.scheduled_for) > now;
     });
@@ -114,26 +119,35 @@ export const useTransfer = () => {
   }, [transfers]);
 
   // Check if transfer limit would be exceeded
-  const checkTransferLimit = useCallback((amount: number): boolean => {
-    if (!transferLimits) return false;
-    return amount > transferLimits.per_transaction_limit;
-  }, [transferLimits]);
+  const checkTransferLimit = useCallback(
+    (amount: number): boolean => {
+      if (!transferLimits) return false;
+      return amount > transferLimits.per_transaction_limit;
+    },
+    [transferLimits]
+  );
 
   // Check daily limit
-  const checkDailyLimit = useCallback((amount: number): boolean => {
-    if (!transferLimits) return false;
-    return transferLimits.daily_used + amount > transferLimits.daily_limit;
-  }, [transferLimits]);
+  const checkDailyLimit = useCallback(
+    (amount: number): boolean => {
+      if (!transferLimits) return false;
+      return transferLimits.daily_used + amount > transferLimits.daily_limit;
+    },
+    [transferLimits]
+  );
 
   // Format currency display
-  const formatCurrency = useCallback((amount: number, currency: string): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  }, []);
+  const formatCurrency = useCallback(
+    (amount: number, currency: string): string => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency || 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    },
+    []
+  );
 
   // Format date display
   const formatTransferDate = useCallback((date: Date): string => {
@@ -142,56 +156,68 @@ export const useTransfer = () => {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit',
+      minute: '2-digit'
     });
   }, []);
 
   // Quick transfer with validation
-  const quickTransfer = useCallback(async (
-    senderAccountId: bigint,
-    receiverAccountNumber: string,
-    amount: number,
-    description?: string,
-    transactionPin?: string
-  ): Promise<any> => {
-    const transferData: CreateTransferDto = {
-      sender_account_id: senderAccountId,
-      receiver_account_number: receiverAccountNumber,
-      amount,
-      description,
-      transaction_pin: transactionPin,
-    };
+  const quickTransfer = useCallback(
+    async (
+      senderAccountId: bigint,
+      receiverAccountNumber: string,
+      amount: number,
+      description?: string,
+      transactionPin?: string,
+      recipientBank?: string,
+      recipientAddress?: string,
+      recipientRoutingNumber?: string
+    ): Promise<any> => {
+      const transferData: CreateTransferDto = {
+        sender_account_id: senderAccountId,
+        receiver_account_number: receiverAccountNumber,
+        amount,
+        description,
+        transaction_pin: transactionPin,
+        recipient_bank: recipientBank,
+        recipient_address: recipientAddress,
+        recipient_routing_number: recipientRoutingNumber
+      };
 
-    return await initiateTransfer(transferData);
-  }, [initiateTransfer]);
+      return await initiateTransfer(transferData);
+    },
+    [initiateTransfer]
+  );
 
   // Schedule transfer with validation
-  const quickScheduleTransfer = useCallback(async (
-    senderAccountId: bigint,
-    receiverAccountNumber: string,
-    amount: number,
-    scheduledFor: Date,
-    description?: string,
-    transactionPin?: string
-  ): Promise<any> => {
-    const transferData: CreateTransferDto = {
-      sender_account_id: senderAccountId,
-      receiver_account_number: receiverAccountNumber,
-      amount,
-      description,
-      transaction_pin: transactionPin,
-      scheduled_for: scheduledFor,
-    };
+  const quickScheduleTransfer = useCallback(
+    async (
+      senderAccountId: bigint,
+      receiverAccountNumber: string,
+      amount: number,
+      scheduledFor: Date,
+      description?: string,
+      transactionPin?: string
+    ): Promise<any> => {
+      const transferData: CreateTransferDto = {
+        sender_account_id: senderAccountId,
+        receiver_account_number: receiverAccountNumber,
+        amount,
+        description,
+        transaction_pin: transactionPin,
+        scheduled_for: scheduledFor
+      };
 
-    return await scheduleTransfer(transferData);
-  }, [scheduleTransfer]);
+      return await scheduleTransfer(transferData);
+    },
+    [scheduleTransfer]
+  );
 
   // Refresh all transfer data
   const refreshTransferData = useCallback(async () => {
     await Promise.all([
       getTransfers(),
       getScheduledTransfers(),
-      getTransferLimits(),
+      getTransferLimits()
     ]);
   }, [getTransfers, getScheduledTransfers, getTransferLimits]);
 
@@ -246,7 +272,7 @@ export const useTransfer = () => {
     receivedTransfers: getReceivedTransfers(),
     pendingTransfers: getPendingTransfers(),
     completedTransfers: getCompletedTransfers(),
-    upcomingScheduledTransfers: getUpcomingScheduledTransfers(),
+    upcomingScheduledTransfers: getUpcomingScheduledTransfers()
   };
 };
 
@@ -260,11 +286,11 @@ export const useSingleTransfer = (transferId?: string) => {
     getTransferDetails,
     cancelTransfer,
     // setCurrentTransfer, // Removed
-    clearError,
+    clearError
   } = useTransferStore();
 
-  const transfer = transferId 
-    ? transfers.find(t => t.id === transferId)
+  const transfer = transferId
+    ? transfers.find((t) => t.id === transferId)
     : undefined; // currentTransfer is removed
 
   // Load transfer details if not already loaded
@@ -274,12 +300,15 @@ export const useSingleTransfer = (transferId?: string) => {
     }
   }, [transferId, transfer, getTransferDetails]);
 
-  const cancelCurrentTransfer = useCallback(async (reason: string) => {
-    if (transfer) {
-      return await cancelTransfer(transfer.id, reason);
-    }
-    return null;
-  }, [transfer, cancelTransfer]);
+  const cancelCurrentTransfer = useCallback(
+    async (reason: string) => {
+      if (transfer) {
+        return await cancelTransfer(transfer.id, reason);
+      }
+      return null;
+    },
+    [transfer, cancelTransfer]
+  );
 
   return {
     // State
@@ -288,9 +317,8 @@ export const useSingleTransfer = (transferId?: string) => {
     error,
 
     // Actions
-    getTransferDetails: () => transferId 
-      ? getTransferDetails(transferId) 
-      : Promise.resolve(transfer),
+    getTransferDetails: () =>
+      transferId ? getTransferDetails(transferId) : Promise.resolve(transfer),
     cancelTransfer: cancelCurrentTransfer,
     // setCurrentTransfer,
     clearError,
@@ -301,14 +329,14 @@ export const useSingleTransfer = (transferId?: string) => {
     isCompleted: transfer?.status === 'completed',
     isCancelled: transfer?.status === 'cancelled',
     isFailed: transfer?.status === 'failed',
-    formattedAmount: transfer 
+    formattedAmount: transfer
       ? `${transfer.amount} ${transfer.currency}`
       : '0.00 USD',
-    formattedDate: transfer 
+    formattedDate: transfer
       ? new Date(transfer.created_at).toLocaleDateString()
       : '',
     scheduledDate: transfer?.scheduled_for
       ? new Date(transfer.scheduled_for).toLocaleDateString()
-      : null,
+      : null
   };
 };
