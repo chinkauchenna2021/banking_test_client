@@ -1,6 +1,5 @@
 // app/layout.tsx
 import Providers from '@/components/layout/providers';
-import { Toaster } from '@/components/ui/sonner';
 import { fontVariables } from '@/lib/font';
 import ThemeProvider from '@/components/layout/ThemeToggle/theme-provider';
 import type { Metadata, Viewport } from 'next';
@@ -12,6 +11,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import './globals.css';
 import './theme.css';
 import DebugAuth from '@/components/DebugAuth';
+import { Toaster } from '@/components/ui/toaster';
 
 const META_THEME_COLORS = {
   light: '#ffffff',

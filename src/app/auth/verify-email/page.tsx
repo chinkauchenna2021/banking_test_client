@@ -41,6 +41,17 @@ export default function VerifyEmailPage() {
   const [countdown, setCountdown] = useState(0);
   const [emailSent, setEmailSent] = useState(false);
 
+  // Show welcome toast when page loads
+  useEffect(() => {
+    if (email && isHydrated) {
+      toast({
+        title: 'Email Verification Required',
+        description: `Please verify ${email} to activate your account.`,
+        duration: 5000
+      });
+    }
+  }, [email, isHydrated, toast]);
+
   // Wait for hydration before auto-verifying
   useEffect(() => {
     if (isHydrated && token && !isVerified && !isVerifying) {
@@ -62,8 +73,9 @@ export default function VerifyEmailPage() {
       setIsVerified(true);
 
       toast({
-        title: 'Email Verified!',
-        description: 'Your account is now active. Redirecting to dashboard...'
+        title: 'Email Verified! 🎉',
+        description: 'Your account is now active. Redirecting to dashboard...',
+        duration: 5000
       });
 
       // Wait for Zustand to persist the state
@@ -75,7 +87,8 @@ export default function VerifyEmailPage() {
         title: 'Verification Failed',
         description:
           error?.message || 'Failed to verify email. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 5000
       });
     } finally {
       setIsVerifying(false);
@@ -102,8 +115,9 @@ export default function VerifyEmailPage() {
       setIsVerified(true);
 
       toast({
-        title: 'Email Verified!',
-        description: 'Your account is now active.'
+        title: 'Email Verified! 🎉',
+        description: 'Your account is now active.',
+        duration: 5000
       });
 
       setTimeout(() => {
@@ -114,7 +128,8 @@ export default function VerifyEmailPage() {
         title: 'Verification Failed',
         description:
           error?.message || 'Failed to verify email. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 5000
       });
     } finally {
       setIsVerifying(false);
@@ -122,7 +137,17 @@ export default function VerifyEmailPage() {
   };
 
   const handleResendVerification = async () => {
-    if (!email.trim() || countdown > 0) return;
+    if (!email.trim() || countdown > 0) {
+      toast({
+        title: 'Cannot Resend',
+        description:
+          countdown > 0
+            ? `Please wait ${countdown} seconds before resending.`
+            : 'Email address is required.',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     setIsResending(true);
     clearError();
@@ -133,9 +158,10 @@ export default function VerifyEmailPage() {
       setCountdown(60);
 
       toast({
-        title: 'Verification Email Sent!',
+        title: 'Verification Email Sent! 📧',
         description:
-          'A new verification email has been sent to your email address.'
+          'A new verification email has been sent to your email address.',
+        duration: 5000
       });
     } catch (error: any) {
       toast({
@@ -143,7 +169,8 @@ export default function VerifyEmailPage() {
         description:
           error?.message ||
           'Failed to resend verification email. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 5000
       });
     } finally {
       setIsResending(false);
@@ -300,13 +327,24 @@ export default function VerifyEmailPage() {
                 style={{ color: 'black' }}
                 className='h-12 rounded-sm border-gray-300 pl-12 font-mono text-base !text-black transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500'
                 value={verificationToken}
-                onChange={(e) => setVerificationToken(e.target.value)}
+                onChange={(e) => {
+                  setVerificationToken(e.target.value);
+                  // Show toast when token is entered
+                  if (e.target.value.length === 6) {
+                    toast({
+                      title: 'Token Entered',
+                      description:
+                        'Token length looks correct. Ready to verify!',
+                      duration: 3000
+                    });
+                  }
+                }}
                 required
                 disabled={isVerifying || isResending}
               />
             </div>
             <p className='text-xs text-gray-500'>
-              Check your email for the verification token
+              Check your email for the verification token (usually 6 digits)
             </p>
           </div>
 

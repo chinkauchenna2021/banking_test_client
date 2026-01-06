@@ -31,25 +31,63 @@ export default function LoginPage() {
     e.preventDefault();
     clearError();
 
+    // Validation
+    if (!loginData.email.trim()) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!loginData.password.trim()) {
+      toast({
+        title: 'Password Required',
+        description: 'Please enter your password.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginData.email)) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       const response = await login(loginData.email, loginData.password);
       setLoginSuccess(true);
 
       toast({
-        title: 'Success',
-        description: 'Login successful! Redirecting...'
+        title: 'Login Successful! 🎉',
+        description: 'Welcome back! Redirecting to your dashboard...',
+        duration: 5000
       });
 
-      // The AuthProvider will handle the redirect based on user role
-      // Don't try to redirect here, let the AuthProvider handle it
+      // Show toast for remember me choice
+      if (loginData.rememberMe) {
+        toast({
+          title: 'Remembered',
+          description: 'Your login will be remembered on this device.',
+          duration: 3000
+        });
+      }
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error?.message || 'Login failed. Please try again.',
-        variant: 'destructive'
+        title: 'Login Failed',
+        description:
+          error?.message || 'Invalid email or password. Please try again.',
+        variant: 'destructive',
+        duration: 5000
       });
     }
   };
+
   const handleDemoLogin = async (type: 'user' | 'admin') => {
     clearError();
 
@@ -65,16 +103,31 @@ export default function LoginPage() {
     };
 
     try {
+      toast({
+        title: 'Demo Login',
+        description: `Logging in as ${type}...`,
+        duration: 3000
+      });
+
       await login(demoCredentials[type].email, demoCredentials[type].password);
       setLoginSuccess(true);
 
-      // Since we can't access useAuth hook here synchronously,
-      // we'll handle the redirection based on the login type
+      toast({
+        title: 'Demo Login Successful!',
+        description: `Logged in as ${type} demo account.`,
+        duration: 3000
+      });
+
       setTimeout(() => {
         router.push(type === 'admin' ? '/admin' : '/dashboard');
       }, 1500);
     } catch (error) {
       console.error('Demo login failed:', error);
+      toast({
+        title: 'Demo Login Failed',
+        description: 'Could not log in with demo credentials.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -82,7 +135,6 @@ export default function LoginPage() {
     <FormContainer
       title='Welcome Back'
       description='Sign in to your account to continue'
-      //   icon={<LogIn className="h-7 w-7 text-white" />}
       backText='Need an account? Sign up'
       backLink='/auth/register'
       footer={
@@ -95,8 +147,9 @@ export default function LoginPage() {
       }
     >
       <div className='space-y-6'>
-        {/* Demo Login Buttons */}
-        {/* <div className="grid grid-cols-2 gap-3">
+        {/* Demo Login Buttons - Uncomment if needed */}
+        {/*
+        <div className="grid grid-cols-2 gap-3">
           <Button
             onClick={() => handleDemoLogin('user')}
             variant="outline"
@@ -122,7 +175,8 @@ export default function LoginPage() {
           <div className="relative flex justify-center text-xs">
             <span className="px-3 bg-white text-gray-500">Or sign in with email</span>
           </div>
-        </div> */}
+        </div>
+        */}
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className='space-y-6'>
@@ -136,7 +190,6 @@ export default function LoginPage() {
             <div className='group relative'>
               <Mail className='absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 transform text-gray-400 transition-colors group-focus-within:text-blue-500' />
               <Input
-                // prefix={<Mail className="h-5 w-5 text-gray-400" />}
                 id='email'
                 type='email'
                 placeholder='you@example.com'
@@ -184,7 +237,19 @@ export default function LoginPage() {
               />
               <button
                 type='button'
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => {
+                  setShowPassword(!showPassword);
+                  // Show toast when password visibility changes
+                  toast({
+                    title: showPassword
+                      ? 'Password Hidden'
+                      : 'Password Visible',
+                    description: showPassword
+                      ? 'Your password is now hidden.'
+                      : 'Your password is now visible.',
+                    duration: 3000
+                  });
+                }}
                 className='absolute top-1/2 right-4 -translate-y-1/2 transform p-1 text-gray-400 transition-colors hover:text-gray-600'
                 disabled={isLoading}
               >
@@ -202,9 +267,20 @@ export default function LoginPage() {
               <Checkbox
                 id='remember'
                 checked={loginData.rememberMe}
-                onCheckedChange={(checked) =>
-                  setLoginData({ ...loginData, rememberMe: checked as boolean })
-                }
+                onCheckedChange={(checked) => {
+                  setLoginData({
+                    ...loginData,
+                    rememberMe: checked as boolean
+                  });
+                  // Show toast when remember me is toggled
+                  if (checked) {
+                    toast({
+                      title: 'Login Will Be Remembered',
+                      description: 'Your login will be saved on this device.',
+                      duration: 3000
+                    });
+                  }
+                }}
                 disabled={isLoading}
                 className='h-5 w-5'
               />

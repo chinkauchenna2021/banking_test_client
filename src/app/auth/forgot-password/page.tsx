@@ -21,19 +21,40 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     clearError();
 
+    // Validation
+    if (!email.trim()) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       await forgotPassword(email);
       setSuccess(true);
       toast({
-        title: 'Success',
-        description: 'Password reset instructions sent to your email.'
+        title: 'Success! 📧',
+        description: 'Password reset instructions sent to your email.',
+        duration: 5000
       });
     } catch (error: any) {
       toast({
         title: 'Error',
         description:
           error?.message || 'Failed to send reset email. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 5000
       });
       console.error('Password reset request failed:', error);
     }
@@ -43,7 +64,6 @@ export default function ForgotPasswordPage() {
     <FormContainer
       title='Reset Your Password'
       description='Enter your email to receive password reset instructions'
-      //   icon={<Shield className="h-7 w-7 text-white" />}
     >
       {!success ? (
         <form onSubmit={handleSubmit} className='space-y-6'>
@@ -142,6 +162,18 @@ export default function ForgotPasswordPage() {
                 <span>Create a new strong password</span>
               </li>
             </ol>
+          </div>
+
+          {/* Extra Information */}
+          <div className='rounded-sm border border-amber-200 bg-amber-50 p-4'>
+            <h4 className='mb-2 text-sm font-semibold text-amber-800'>
+              ⏰ Important:
+            </h4>
+            <ul className='space-y-1 text-xs text-amber-700'>
+              <li>• Reset link expires in 1 hour</li>
+              <li>• Check spam folder if you don't see the email</li>
+              <li>• Use a strong, unique password</li>
+            </ul>
           </div>
         </motion.div>
       )}

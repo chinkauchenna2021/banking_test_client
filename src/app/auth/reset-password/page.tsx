@@ -43,6 +43,12 @@ export default function ResetPasswordPage() {
         description: 'Invalid or missing reset token.',
         variant: 'destructive'
       });
+    } else {
+      toast({
+        title: 'Reset Link Valid',
+        description: 'You can now create a new password.',
+        duration: 3000
+      });
     }
   }, [token, toast]);
 
@@ -57,7 +63,25 @@ export default function ResetPasswordPage() {
     if (/[0-9]/.test(password)) strength += 15;
     if (/[^A-Za-z0-9]/.test(password)) strength += 20;
 
-    setPasswordStrength(Math.min(strength, 100));
+    const newStrength = Math.min(strength, 100);
+    setPasswordStrength(newStrength);
+
+    // Show toast when password becomes strong
+    if (newStrength >= 70 && newStrength < 80) {
+      toast({
+        title: 'Good Password!',
+        description: 'Your password is getting stronger.',
+        duration: 3000
+      });
+    } else if (newStrength >= 90) {
+      toast({
+        title: 'Excellent Password!',
+        description: 'Your password is very strong.',
+        duration: 3000
+      });
+    }
+
+    return newStrength;
   };
 
   const handlePasswordChange = (password: string) => {
@@ -102,8 +126,9 @@ export default function ResetPasswordPage() {
       setSuccess(true);
 
       toast({
-        title: 'Success',
-        description: 'Password reset successful! Redirecting to login...'
+        title: 'Success! 🎉',
+        description: 'Password reset successful! Redirecting to login...',
+        duration: 5000
       });
 
       setTimeout(() => {
@@ -115,7 +140,8 @@ export default function ResetPasswordPage() {
         title: 'Error',
         description:
           error?.message || 'Failed to reset password. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 5000
       });
     }
   };
@@ -245,7 +271,20 @@ export default function ResetPasswordPage() {
                 style={{ color: 'black' }}
                 className='h-11 rounded-lg border-gray-300 pr-10 pl-10 text-slate-900 transition-all focus:border-blue-500 focus:ring-blue-500'
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  // Show toast when passwords match
+                  if (
+                    e.target.value === newPassword &&
+                    e.target.value.length > 0
+                  ) {
+                    toast({
+                      title: 'Passwords Match!',
+                      description: 'Your passwords are matching correctly.',
+                      duration: 3000
+                    });
+                  }
+                }}
                 required
                 disabled={isLoading}
               />

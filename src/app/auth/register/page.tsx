@@ -94,7 +94,7 @@ export default function RegisterPage() {
     return { hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChars };
   };
 
-  // Validate step
+  // Validate step with toast feedback
   const validateStep = (stepNumber: number) => {
     const errors: Record<string, string> = {};
 
@@ -111,7 +111,18 @@ export default function RegisterPage() {
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registrationData.email)) {
           errors.email = 'Please enter a valid email address';
         }
+
         setValidationErrors(errors);
+
+        // Show toast for validation errors
+        if (Object.keys(errors).length > 0) {
+          toast({
+            title: 'Missing Information',
+            description: 'Please fill in all required fields in Step 1.',
+            variant: 'destructive'
+          });
+        }
+
         return Object.keys(errors).length === 0;
 
       case 2:
@@ -134,7 +145,18 @@ export default function RegisterPage() {
             errors.date_of_birth = 'You must be at least 18 years old';
           }
         }
+
         setValidationErrors(errors);
+
+        // Show toast for validation errors
+        if (Object.keys(errors).length > 0) {
+          toast({
+            title: 'Account Details Required',
+            description: 'Please complete all account details.',
+            variant: 'destructive'
+          });
+        }
+
         return Object.keys(errors).length === 0;
 
       case 3:
@@ -172,6 +194,16 @@ export default function RegisterPage() {
         }
 
         setValidationErrors(errors);
+
+        // Show toast for validation errors
+        if (Object.keys(errors).length > 0) {
+          toast({
+            title: 'Security Requirements',
+            description: 'Please meet all password and agreement requirements.',
+            variant: 'destructive'
+          });
+        }
+
         return Object.keys(errors).length === 0;
 
       default:
@@ -179,82 +211,24 @@ export default function RegisterPage() {
     }
   };
 
-  // Handle next step
+  // Handle next step with toast feedback
   const handleNextStep = () => {
     if (validateStep(step)) {
       setStep(step + 1);
       setValidationErrors({});
+
+      // Show success toast for step completion
+      toast({
+        title: `Step ${step} Complete!`,
+        description:
+          step === 1
+            ? 'Personal information saved. Now add account details.'
+            : 'Account details saved. Now set up security.'
+      });
     }
   };
 
   // Handle registration
-  // const handleRegister = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   clearError();
-  //   setValidationErrors({});
-
-  //   if (!validateStep(3)) {
-  //     toast({
-  //       title: 'Validation Error',
-  //       description: 'Please complete all required fields correctly.',
-  //       variant: 'destructive',
-  //     });
-  //     return;
-  //   }
-
-  //   try {
-  //     const userData = {
-  //       first_name: registrationData.firstName,
-  //       last_name: registrationData.lastName,
-  //       email: registrationData.email,
-  //       phone: registrationData.phone,
-  //       account_type: registrationData.accountType,
-  //       password: registrationData.password,
-  //       password_confirmation: registrationData.confirmPassword,
-  //       date_of_birth: dateOfBirth ? formatDate(dateOfBirth) : '',
-  //       accept_terms: registrationData.acceptTerms,
-  //       is_admin: false,
-  //     };
-
-  //     await register(userData);
-  //     setRegistrationSuccess(true);
-
-  //     toast({
-  //       title: 'Success',
-  //       description: 'Account created successfully! Please check your email to verify your account.',
-  //     });
-
-  //     // Redirect to verification page or login
-  //     setTimeout(() => {
-  //       router.push('/auth/verify-email');
-  //     }, 3000);
-
-  //   } catch (error: any) {
-  //     // Handle server validation errors
-  //     if (error.response?.data?.errors) {
-  //       const serverErrors: Record<string, string> = {};
-  //       error.response.data.errors.forEach((err: any) => {
-  //         if (err.path) {
-  //           serverErrors[err.path] = err.msg;
-  //         }
-  //       });
-  //       setValidationErrors(serverErrors);
-
-  //       toast({
-  //         title: 'Registration Failed',
-  //         description: 'Please fix the errors below and try again.',
-  //         variant: 'destructive',
-  //       });
-  //     } else {
-  //       toast({
-  //         title: 'Registration Failed',
-  //         description: error?.message || 'Registration failed. Please try again.',
-  //         variant: 'destructive',
-  //       });
-  //     }
-  //   }
-  // };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
@@ -293,9 +267,10 @@ export default function RegisterPage() {
       );
 
       toast({
-        title: 'Registration Successful!',
+        title: 'Registration Successful! 🎉',
         description:
-          'Please check your email to verify your account before logging in.'
+          'Please check your email to verify your account before logging in.',
+        duration: 5000
       });
 
       // Redirect to verification page
@@ -318,7 +293,8 @@ export default function RegisterPage() {
         toast({
           title: 'Registration Failed',
           description: 'Please fix the errors below and try again.',
-          variant: 'destructive'
+          variant: 'destructive',
+          duration: 5000
         });
       } else {
         toast({
@@ -519,7 +495,7 @@ export default function RegisterPage() {
                 <Input
                   id='phone'
                   type='tel'
-                  placeholder='+2348065843870'
+                  placeholder='(123) 456-7890'
                   className={`h-11 rounded-lg border-gray-300 text-gray-900 transition-all focus:border-blue-500 focus:ring-blue-500 ${
                     validationErrors.phone
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -544,6 +520,7 @@ export default function RegisterPage() {
                     {validationErrors.phone}
                   </p>
                 )}
+                <p className='text-xs text-gray-500'>Format: (XXX) XXX-XXXX</p>
               </div>
             </motion.div>
           )}
@@ -617,8 +594,6 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* In your RegisterPage component, update the PopoverTrigger button */}
-
               <div className='space-y-2'>
                 <Label className='text-sm font-medium text-gray-700'>
                   Date of Birth *
@@ -633,7 +608,6 @@ export default function RegisterPage() {
                           : ''
                       } ${dateOfBirth ? 'text-gray-900' : 'text-gray-500'}`}
                     >
-                      {/* Use CalendarIcon instead of Calendar */}
                       <CalendarIcon className='mr-2 h-4 w-4 text-gray-500' />
                       {dateOfBirth ? (
                         <span className='font-medium text-gray-900'>
@@ -654,12 +628,20 @@ export default function RegisterPage() {
                       mode='single'
                       selected={dateOfBirth}
                       onSelect={(date: Date | undefined) => {
-                        // Explicitly type the parameter
                         setDateOfBirth(date);
                         if (validationErrors.date_of_birth) {
                           setValidationErrors({
                             ...validationErrors,
                             date_of_birth: ''
+                          });
+                        }
+
+                        // Show success toast when date is selected
+                        if (date) {
+                          toast({
+                            title: 'Date Selected',
+                            description: 'Birth date saved successfully.',
+                            duration: 3000
                           });
                         }
                       }}
@@ -802,7 +784,9 @@ export default function RegisterPage() {
                             ? 'text-red-600'
                             : passwordStrength < 70
                               ? 'text-yellow-600'
-                              : 'text-green-600'
+                              : passwordStrength < 90
+                                ? 'text-blue-600'
+                                : 'text-green-600'
                         }`}
                       >
                         {passwordStrength < 40
@@ -826,48 +810,100 @@ export default function RegisterPage() {
                               : 'bg-green-500'
                       }`}
                     />
+
+                    {/* Show toast when password becomes strong */}
+                    {passwordStrength >= 70 && passwordStrength < 80 && (
+                      <p className='text-xs text-green-600'>
+                        Good! Keep going for a stronger password
+                      </p>
+                    )}
+                    {passwordStrength >= 90 && (
+                      <p className='text-xs text-green-600'>
+                        Excellent! Your password is very strong
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {/* Password requirements */}
                 <div className='mt-2 space-y-1 text-xs'>
                   <div
-                    className={`flex items-center gap-2 ${/[A-Z]/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                    className={`flex items-center gap-2 ${
+                      /[A-Z]/.test(registrationData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}
                   >
                     <div
-                      className={`h-2 w-2 rounded-full ${/[A-Z]/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                      className={`h-2 w-2 rounded-full ${
+                        /[A-Z]/.test(registrationData.password)
+                          ? 'bg-green-500'
+                          : 'bg-gray-300'
+                      }`}
                     />
                     At least one uppercase letter
                   </div>
                   <div
-                    className={`flex items-center gap-2 ${/[a-z]/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                    className={`flex items-center gap-2 ${
+                      /[a-z]/.test(registrationData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}
                   >
                     <div
-                      className={`h-2 w-2 rounded-full ${/[a-z]/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                      className={`h-2 w-2 rounded-full ${
+                        /[a-z]/.test(registrationData.password)
+                          ? 'bg-green-500'
+                          : 'bg-gray-300'
+                      }`}
                     />
                     At least one lowercase letter
                   </div>
                   <div
-                    className={`flex items-center gap-2 ${/\d/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                    className={`flex items-center gap-2 ${
+                      /\d/.test(registrationData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}
                   >
                     <div
-                      className={`h-2 w-2 rounded-full ${/\d/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                      className={`h-2 w-2 rounded-full ${
+                        /\d/.test(registrationData.password)
+                          ? 'bg-green-500'
+                          : 'bg-gray-300'
+                      }`}
                     />
                     At least one number
                   </div>
                   <div
-                    className={`flex items-center gap-2 ${/[!@#$%^&*(),.?":{}|<>]/.test(registrationData.password) ? 'text-green-600' : 'text-gray-500'}`}
+                    className={`flex items-center gap-2 ${
+                      /[!@#$%^&*(),.?":{}|<>]/.test(registrationData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}
                   >
                     <div
-                      className={`h-2 w-2 rounded-full ${/[!@#$%^&*(),.?":{}|<>]/.test(registrationData.password) ? 'bg-green-500' : 'bg-gray-300'}`}
+                      className={`h-2 w-2 rounded-full ${
+                        /[!@#$%^&*(),.?":{}|<>]/.test(registrationData.password)
+                          ? 'bg-green-500'
+                          : 'bg-gray-300'
+                      }`}
                     />
                     At least one special character
                   </div>
                   <div
-                    className={`flex items-center gap-2 ${registrationData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}`}
+                    className={`flex items-center gap-2 ${
+                      registrationData.password.length >= 8
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}
                   >
                     <div
-                      className={`h-2 w-2 rounded-full ${registrationData.password.length >= 8 ? 'bg-green-500' : 'bg-gray-300'}`}
+                      className={`h-2 w-2 rounded-full ${
+                        registrationData.password.length >= 8
+                          ? 'bg-green-500'
+                          : 'bg-gray-300'
+                      }`}
                     />
                     Minimum 8 characters
                   </div>
@@ -909,6 +945,18 @@ export default function RegisterPage() {
                           confirmPassword: ''
                         });
                       }
+
+                      // Show toast when passwords match
+                      if (
+                        e.target.value === registrationData.password &&
+                        e.target.value.length > 0
+                      ) {
+                        toast({
+                          title: 'Passwords Match!',
+                          description: 'Your passwords are matching correctly.',
+                          duration: 3000
+                        });
+                      }
                     }}
                     required
                   />
@@ -947,6 +995,16 @@ export default function RegisterPage() {
                           acceptTerms: ''
                         });
                       }
+
+                      // Show toast when terms are accepted
+                      if (checked) {
+                        toast({
+                          title: 'Terms Accepted',
+                          description:
+                            'Thank you for accepting our Terms of Service.',
+                          duration: 3000
+                        });
+                      }
                     }}
                     required
                     className='border-gray-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600'
@@ -983,6 +1041,16 @@ export default function RegisterPage() {
                         setValidationErrors({
                           ...validationErrors,
                           acceptPrivacy: ''
+                        });
+                      }
+
+                      // Show toast when privacy policy is accepted
+                      if (checked) {
+                        toast({
+                          title: 'Privacy Policy Accepted',
+                          description:
+                            'Thank you for accepting our Privacy Policy.',
+                          duration: 3000
                         });
                       }
                     }}
@@ -1036,7 +1104,15 @@ export default function RegisterPage() {
             <Button
               type='button'
               variant='outline'
-              onClick={() => setStep(step - 1)}
+              onClick={() => {
+                setStep(step - 1);
+                // Show toast for going back
+                toast({
+                  title: 'Going Back',
+                  description: `Returning to Step ${step - 1}.`,
+                  duration: 3000
+                });
+              }}
               className='h-11 rounded-lg border-gray-300 text-gray-700 hover:border-gray-400'
               disabled={isLoading || registrationSuccess}
             >
@@ -1091,6 +1167,25 @@ export default function RegisterPage() {
               onClick={() => {
                 if (stepNumber < step || getStepStatus(stepNumber - 1)) {
                   setStep(stepNumber);
+                  // Show toast when clicking on step indicator
+                  toast({
+                    title: `Switching to Step ${stepNumber}`,
+                    description: `Now editing ${
+                      stepNumber === 1
+                        ? 'Personal Info'
+                        : stepNumber === 2
+                          ? 'Account Details'
+                          : 'Security'
+                    }`,
+                    duration: 3000
+                  });
+                } else {
+                  // Show toast if step is not accessible
+                  toast({
+                    title: 'Step Locked',
+                    description: 'Please complete the previous steps first.',
+                    variant: 'destructive'
+                  });
                 }
               }}
               className={`h-2 w-8 rounded-full transition-all ${
@@ -1101,7 +1196,7 @@ export default function RegisterPage() {
                     : 'bg-gray-300'
               } ${
                 stepNumber < step || getStepStatus(stepNumber - 1)
-                  ? 'cursor-pointer'
+                  ? 'cursor-pointer hover:bg-blue-500'
                   : 'cursor-not-allowed'
               }`}
               disabled={isLoading}
