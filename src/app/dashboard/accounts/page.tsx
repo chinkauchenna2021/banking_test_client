@@ -65,6 +65,7 @@ import { useUser } from '@/hooks/useUser';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function AccountsPage() {
   const {
