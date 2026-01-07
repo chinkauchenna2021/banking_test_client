@@ -801,7 +801,7 @@ class ApiClient {
   }
 
   public exportTransactions<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/transactions/export', {
+    return this.post<T>('/transactions/export', undefined, {
       params,
       responseType: 'blob'
     });
@@ -838,7 +838,7 @@ class ApiClient {
   // Support/Contact
   // =================================================================
   public submitContactForm<T = any>(data: any): Promise<T> {
-    return this.post<T>('/contact', data);
+    return this.post<T>('/contact/contact', data);
   }
 
   public getSupportTickets<T = any>(params: any = {}): Promise<T> {
@@ -864,11 +864,11 @@ class ApiClient {
   // Voice Balance Requests
   // =================================================================
   public requestVoiceBalance<T = any>(data: any): Promise<T> {
-    return this.post<T>('/voice-balance', data);
+    return this.post<T>('/voice/balance/request', data);
   }
 
   public getVoiceBalanceHistory<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/voice-balance/history', { params });
+    return this.get<T>('/voice/balance/requests', { params });
   }
 
   // =================================================================
