@@ -71,13 +71,21 @@ export interface ReceiptState {
 
   // Receipt Management
   generateReceipt: (data: any) => Promise<Receipt>;
-  getReceipts: (params?: any) => Promise<{ receipts: Receipt[]; pagination: any }>;
+  getReceipts: (
+    params?: any
+  ) => Promise<{ receipts: Receipt[]; pagination: any }>;
   getReceiptDetails: (receiptId: string) => Promise<Receipt>;
-  downloadReceipt: (receiptId: string, format?: string) => Promise<Blob | Receipt>;
+  downloadReceipt: (
+    receiptId: string,
+    format?: string
+  ) => Promise<Blob | Receipt>;
   resendReceipt: (receiptId: string) => Promise<void>;
 
   // Public Verification
-  verifyReceipt: (receiptNumber: string, verificationCode: string) => Promise<any>;
+  verifyReceipt: (
+    receiptNumber: string,
+    verificationCode: string
+  ) => Promise<any>;
 
   // Receipt Statistics
   getReceiptStatistics: (period?: string) => Promise<ReceiptStatistics>;
@@ -107,14 +115,17 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
       const receipt = response.data;
       set((state) => ({
         receipts: [receipt, ...state.receipts],
-        isLoading: false,
+        isLoading: false
       }));
 
       return receipt;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to generate receipt',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to generate receipt',
+        isLoading: false
       });
       throw error;
     }
@@ -125,20 +136,30 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
     try {
       const response = await apiClient.get<{
         success: boolean;
-        receipts: Receipt[];
+        receipts?: Receipt[];
+        data?: Receipt[];
         pagination: any;
       }>('/receipts', { params });
 
+      const receipts = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.receipts)
+          ? response.receipts
+          : [];
+
       set({
-        receipts: response.receipts,
-        isLoading: false,
+        receipts,
+        isLoading: false
       });
 
-      return response;
+      return { receipts, pagination: response.pagination };
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch receipts',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch receipts',
+        isLoading: false
       });
       throw error;
     }
@@ -155,14 +176,17 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
       const receipt = response.data;
       set({
         currentReceipt: receipt,
-        isLoading: false,
+        isLoading: false
       });
 
       return receipt;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch receipt details',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch receipt details',
+        isLoading: false
       });
       throw error;
     }
@@ -171,13 +195,10 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
   downloadReceipt: async (receiptId: string, format: string = 'pdf') => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.get(
-        `/receipts/${receiptId}/download`,
-        {
-          params: { format },
-          responseType: format === 'pdf' ? 'blob' : 'json',
-        }
-      );
+      const response = await apiClient.get(`/receipts/${receiptId}/download`, {
+        params: { format },
+        responseType: format === 'pdf' ? 'blob' : 'json'
+      });
 
       set({ isLoading: false });
 
@@ -188,8 +209,11 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
       }
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to download receipt',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to download receipt',
+        isLoading: false
       });
       throw error;
     }
@@ -202,15 +226,21 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
         success: boolean;
         data: any;
       }>('/receipts/verify', {
-        params: { receipt_number: receiptNumber, verification_code: verificationCode },
+        params: {
+          receipt_number: receiptNumber,
+          verification_code: verificationCode
+        }
       });
 
       set({ isLoading: false });
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to verify receipt',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to verify receipt',
+        isLoading: false
       });
       throw error;
     }
@@ -224,8 +254,11 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
       set({ isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to resend receipt',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to resend receipt',
+        isLoading: false
       });
       throw error;
     }
@@ -241,20 +274,24 @@ export const useReceiptStore = create<ReceiptState>((set, get) => ({
 
       set({
         statistics: response.data,
-        isLoading: false,
+        isLoading: false
       });
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch receipt statistics',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch receipt statistics',
+        isLoading: false
       });
       throw error;
     }
   },
 
-  clearReceipts: () => set({ receipts: [], currentReceipt: null, statistics: null }),
+  clearReceipts: () =>
+    set({ receipts: [], currentReceipt: null, statistics: null }),
   clearError: () => set({ error: null }),
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading: boolean) => set({ isLoading: loading })
 }));
