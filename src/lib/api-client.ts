@@ -997,7 +997,7 @@ class ApiClient {
     return this.get<T>('/admin/deposits/enhanced', { params });
   }
 
-  public getDepositDetails<T = any>(depositId: string): Promise<T> {
+  public getAdminDepositDetails<T = any>(depositId: string): Promise<T> {
     return this.get<T>(`/admin/deposits/${depositId}/details`);
   }
 

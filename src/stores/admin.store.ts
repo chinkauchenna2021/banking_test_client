@@ -774,7 +774,7 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
   getDepositDetails: async (depositId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getDepositDetails(depositId);
+      const response = await apiClient.getAdminDepositDetails(depositId);
       const deposit = response.data;
       set({
         selectedDeposit: deposit,
