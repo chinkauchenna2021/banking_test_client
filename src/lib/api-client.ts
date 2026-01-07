@@ -77,9 +77,14 @@ class ApiClient {
       },
       async (error) => {
         const originalRequest = error.config;
+        const isAuthEndpoint = originalRequest?.url?.includes('/auth/');
 
         // Handle 401 Unauthorized errors
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !isAuthEndpoint
+        ) {
           if (this.isRefreshing) {
             // Add to queue and wait for token refresh
             return new Promise((resolve, reject) => {
