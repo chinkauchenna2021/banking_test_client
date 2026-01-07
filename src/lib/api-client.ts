@@ -157,7 +157,23 @@ class ApiClient {
   }
 
   public updateUserProfile<T = any>(updateData: any): Promise<T> {
-    return this.put<T>('/users/profile', updateData);
+    const isFormData =
+      typeof FormData !== 'undefined' && updateData instanceof FormData;
+    return this.put<T>('/users/profile', updateData, {
+      headers: isFormData
+        ? {
+            'Content-Type': 'multipart/form-data'
+          }
+        : undefined
+    });
+  }
+
+  public submitKYC<T = any>(formData: FormData): Promise<T> {
+    return this.post<T>('/users/kyc/submit', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   }
 
   public getUserDashboard<T = any>(): Promise<T> {

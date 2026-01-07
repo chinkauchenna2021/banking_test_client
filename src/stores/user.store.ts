@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { apiClient } from '../lib/api-client';
 
+const isFileValue = (value: unknown): value is File =>
+  typeof File !== 'undefined' && value instanceof File;
+
 export interface Account {
   id: bigint;
   user_id: bigint;
@@ -59,7 +62,7 @@ export interface UpdateUserDto {
   state?: string;
   country?: string;
   zip_code?: string;
-  profile_image?: string;
+  profile_image?: string | File;
   gender?: string;
   occupation?: string;
   employer?: string;
@@ -74,7 +77,7 @@ export interface ChangePasswordDto {
 export interface KYCDataDto {
   identification_type: string;
   identification_number: string;
-  identification_image?: string;
+  identification_image?: string | File;
   tax_id?: string;
   monthly_income?: number;
   source_of_funds?: string;
@@ -183,33 +186,36 @@ export const useUserStore = create<UserState>((set, get) => ({
   updateProfile: async (updateData: UpdateUserDto) => {
     set({ isLoading: true, error: null });
     try {
-      const formData = new FormData();
+      const hasFile = isFileValue(updateData.profile_image);
 
-      // Add text fields
-      Object.entries(updateData).forEach(([key, value]) => {
-        if (key !== 'profile_image' && value !== undefined) {
-          formData.append(key, value.toString());
-        }
-      });
+      const response = hasFile
+        ? await (() => {
+            const formData = new FormData();
 
-      // Add file if present
-      if (
-        updateData.profile_image &&
-        typeof updateData.profile_image === 'string'
-      ) {
-        // If it's a string (path), just pass it
-        formData.append('profile_image', updateData.profile_image);
-      }
+            Object.entries(updateData).forEach(([key, value]) => {
+              if (
+                value === undefined ||
+                value === null ||
+                key === 'profile_image'
+              ) {
+                return;
+              }
+              formData.append(key, value.toString());
+            });
 
-      const response = await apiClient.put<{
-        success: boolean;
-        data: User;
-        message: string;
-      }>('/users/profile', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+            formData.append('profile_image', updateData.profile_image as File);
+
+            return apiClient.updateUserProfile<{
+              success: boolean;
+              data: User;
+              message: string;
+            }>(formData);
+          })()
+        : await apiClient.updateUserProfile<{
+            success: boolean;
+            data: User;
+            message: string;
+          }>(updateData);
 
       const updatedUser = response.data;
       set({
@@ -255,23 +261,37 @@ export const useUserStore = create<UserState>((set, get) => ({
   submitKYC: async (kycData: KYCDataDto) => {
     set({ isLoading: true, error: null });
     try {
-      const formData = new FormData();
+      const hasFile = isFileValue(kycData.identification_image);
 
-      // Add text fields
-      Object.entries(kycData).forEach(([key, value]) => {
-        if (value !== undefined) {
+      if (hasFile) {
+        const formData = new FormData();
+
+        Object.entries(kycData).forEach(([key, value]) => {
+          if (
+            value === undefined ||
+            value === null ||
+            key === 'identification_image'
+          ) {
+            return;
+          }
           formData.append(key, value.toString());
-        }
-      });
+        });
 
-      await apiClient.post<{
-        success: boolean;
-        message: string;
-      }>('/users/kyc/submit', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+        formData.append(
+          'identification_image',
+          kycData.identification_image as File
+        );
+
+        await apiClient.submitKYC<{
+          success: boolean;
+          message: string;
+        }>(formData);
+      } else {
+        await apiClient.post<{
+          success: boolean;
+          message: string;
+        }>('/users/kyc/submit', kycData);
+      }
 
       // Refresh profile
       await get().getProfile();
