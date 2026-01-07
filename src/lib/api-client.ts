@@ -989,7 +989,7 @@ class ApiClient {
   }
 
   // Deposit Management
-  public getDeposits<T = any>(params?: any): Promise<T> {
+  public getAdminDeposits<T = any>(params?: any): Promise<T> {
     return this.get<T>('/admin/deposits', { params });
   }
 
