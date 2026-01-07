@@ -33,6 +33,7 @@ import {
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useOrganization, useUser } from '@clerk/nextjs';
+import { useAuth } from '../../hooks/useAuth';
 import {
   IconBell,
   IconChevronRight,
@@ -56,6 +57,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
+import { Button } from '../ui/button';
 
 const bankingNavItems = [
   {
@@ -108,9 +110,28 @@ const bankingNavItems = [
 export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
-  const { user } = useUser();
   const { organization } = useOrganization();
   const router = useRouter();
+
+  const {
+    user,
+    isAuthenticated,
+    isLoading,
+    error,
+    isHydrated,
+    login,
+    logout,
+    getProfile,
+    clearError,
+    register,
+    forgotPassword,
+    refreshAccessToken,
+    resetPassword,
+    changePassword,
+    verifyEmail,
+    verifyTwoFactor,
+    isAdmin
+  } = useAuth();
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
@@ -129,17 +150,17 @@ export default function AppSidebar() {
       support: IconHeadset,
       default: IconBuildingBank
     };
-    
+
     const Icon = iconMap[iconName] || iconMap.default;
-    return <Icon className="h-4 w-4" />;
+    return <Icon className='h-4 w-4' />;
   };
 
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-3">
-          <Icons.logo className="h-6 w-6" />
-          <span className="font-semibold">Banking</span>
+        <div className='flex items-center gap-2 px-4 py-3'>
+          <Icons.logo className='h-6 w-6' />
+          <span className='font-semibold'>Banking</span>
         </div>
       </SidebarHeader>
       <SidebarContent className='overflow-x-hidden'>
@@ -227,7 +248,8 @@ export default function AppSidebar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <IconLogout className='mr-2 h-4 w-4' />
-                  <SignOutButton redirectUrl='/auth/sign-in' />
+                  {/* <SignOutButton redirectUrl='/auth/sign-in' /> */}
+                  {isAuthenticated && <Button onClick={logout}>logout</Button>}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
