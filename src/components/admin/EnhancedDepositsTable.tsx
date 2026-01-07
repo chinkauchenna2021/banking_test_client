@@ -46,7 +46,10 @@ import {
   Filter,
   Download,
   ExternalLink,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Building,
+  Wallet,
+  CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -69,7 +72,11 @@ export default function EnhancedDepositsTable({
     isLoading
   } = useEnhancedAdmin();
 
-  const { approveDeposit, rejectDeposit } = useEnhancedAdminDeposit();
+  const {
+    approveDeposit,
+    rejectDeposit,
+    setSelectedDeposit: setStoreSelectedDeposit
+  } = useEnhancedAdminDeposit();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -98,8 +105,9 @@ export default function EnhancedDepositsTable({
     ? filteredDeposits.slice(0, limit)
     : filteredDeposits;
 
-  const handleApprove = async (depositId: string) => {
+  const handleApprove = async (deposit: any) => {
     try {
+      setStoreSelectedDeposit(deposit);
       await approveDeposit('Approved by admin');
       toast.success('Deposit approved successfully');
       setShowReviewDialog(false);
@@ -114,6 +122,7 @@ export default function EnhancedDepositsTable({
       return;
     }
     try {
+      setStoreSelectedDeposit(selectedDeposit);
       await rejectDeposit(rejectionReason);
       toast.success('Deposit rejected');
       setShowReviewDialog(false);
@@ -139,13 +148,13 @@ export default function EnhancedDepositsTable({
   const getMethodIcon = (method: string) => {
     switch (method) {
       case 'crypto':
-        return '₿';
+        return <Wallet className='h-4 w-4 text-green-600' />;
       case 'bank_transfer':
-        return '🏦';
+        return <Building className='h-4 w-4 text-blue-600' />;
       case 'card':
-        return '💳';
+        return <CreditCard className='h-4 w-4 text-purple-600' />;
       default:
-        return '💰';
+        return <CreditCard className='text-muted-foreground h-4 w-4' />;
     }
   };
 
@@ -352,7 +361,7 @@ export default function EnhancedDepositsTable({
                             <Button
                               variant='default'
                               size='sm'
-                              onClick={() => handleApprove(deposit.id)}
+                              onClick={() => handleApprove(deposit)}
                             >
                               <CheckCircle className='h-4 w-4' />
                             </Button>
@@ -395,7 +404,9 @@ export default function EnhancedDepositsTable({
                 <div>
                   <Label>Reference ID</Label>
                   <p className='font-mono text-sm'>
-                    {selectedDeposit.reference}
+                    {selectedDeposit.deposit_reference ||
+                      selectedDeposit.bank_reference ||
+                      selectedDeposit.id}
                   </p>
                 </div>
                 <div>
@@ -499,9 +510,7 @@ export default function EnhancedDepositsTable({
               Reject
             </Button>
             <Button
-              onClick={() =>
-                selectedDeposit && handleApprove(selectedDeposit.id)
-              }
+              onClick={() => selectedDeposit && handleApprove(selectedDeposit)}
             >
               <CheckCircle className='mr-2 h-4 w-4' />
               Approve Deposit

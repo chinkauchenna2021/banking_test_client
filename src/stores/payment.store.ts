@@ -66,13 +66,22 @@ export interface PaymentState {
   // Payment Operations
   initiatePayment: (paymentData: any) => Promise<Payment>;
   verifyPayment: (reference: string) => Promise<Payment>;
-  getPaymentHistory: (params?: any) => Promise<{ payments: Payment[]; pagination: any }>;
-  getPaymentFees: (amount: number, currency?: string, method?: string) => Promise<PaymentFees>;
+  getPaymentHistory: (
+    params?: any
+  ) => Promise<{ payments: Payment[]; pagination: any }>;
+  getPaymentFees: (
+    amount: number,
+    currency?: string,
+    method?: string
+  ) => Promise<PaymentFees>;
 
   // Payment Methods Management
   getPaymentMethods: () => Promise<PaymentMethod[]>;
   addPaymentMethod: (methodData: any) => Promise<PaymentMethod>;
-  updatePaymentMethod: (methodId: string, updateData: any) => Promise<PaymentMethod>;
+  updatePaymentMethod: (
+    methodId: string,
+    updateData: any
+  ) => Promise<PaymentMethod>;
   deletePaymentMethod: (methodId: string) => Promise<void>;
   setDefaultPaymentMethod: (methodId: string) => Promise<PaymentMethod>;
 
@@ -101,14 +110,17 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
       const payment = response.data;
       set((state) => ({
         payments: [payment, ...state.payments],
-        isLoading: false,
+        isLoading: false
       }));
 
       return payment;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to initiate payment',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to initiate payment',
+        isLoading: false
       });
       throw error;
     }
@@ -127,14 +139,17 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
         payments: state.payments.map((p) =>
           p.reference === reference ? payment : p
         ),
-        isLoading: false,
+        isLoading: false
       }));
 
       return payment;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to verify payment',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to verify payment',
+        isLoading: false
       });
       throw error;
     }
@@ -151,20 +166,27 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
 
       set({
         payments: response.payments,
-        isLoading: false,
+        isLoading: false
       });
 
       return response;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch payment history',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch payment history',
+        isLoading: false
       });
       throw error;
     }
   },
 
-  getPaymentFees: async (amount: number, currency: string = 'USD', method?: string) => {
+  getPaymentFees: async (
+    amount: number,
+    currency: string = 'USD',
+    method?: string
+  ) => {
     set({ isLoading: true, error: null });
     try {
       const params: any = { amount, currency };
@@ -177,14 +199,17 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
 
       set({
         fees: response.data,
-        isLoading: false,
+        isLoading: false
       });
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to calculate payment fees',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to calculate payment fees',
+        isLoading: false
       });
       throw error;
     }
@@ -196,18 +221,21 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
       const response = await apiClient.get<{
         success: boolean;
         data: PaymentMethod[];
-      }>('/payment-methods');
+      }>('/payments/payment-methods');
 
       set({
         paymentMethods: response.data,
-        isLoading: false,
+        isLoading: false
       });
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch payment methods',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch payment methods',
+        isLoading: false
       });
       throw error;
     }
@@ -220,19 +248,22 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
         success: boolean;
         data: PaymentMethod;
         message: string;
-      }>('/payment-methods', methodData);
+      }>('/payments/payment-methods', methodData);
 
       const method = response.data;
       set((state) => ({
         paymentMethods: [...state.paymentMethods, method],
-        isLoading: false,
+        isLoading: false
       }));
 
       return method;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to add payment method',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to add payment method',
+        isLoading: false
       });
       throw error;
     }
@@ -245,21 +276,24 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
         success: boolean;
         data: PaymentMethod;
         message: string;
-      }>(`/payment-methods/${methodId}`, updateData);
+      }>(`/payments/payment-methods/${methodId}`, updateData);
 
       const updatedMethod = response.data;
       set((state) => ({
         paymentMethods: state.paymentMethods.map((method) =>
           method.id === methodId ? updatedMethod : method
         ),
-        isLoading: false,
+        isLoading: false
       }));
 
       return updatedMethod;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to update payment method',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to update payment method',
+        isLoading: false
       });
       throw error;
     }
@@ -268,16 +302,21 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
   deletePaymentMethod: async (methodId: string) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/payment-methods/${methodId}`);
+      await apiClient.delete(`/payments/payment-methods/${methodId}`);
 
       set((state) => ({
-        paymentMethods: state.paymentMethods.filter((method) => method.id !== methodId),
-        isLoading: false,
+        paymentMethods: state.paymentMethods.filter(
+          (method) => method.id !== methodId
+        ),
+        isLoading: false
       }));
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to delete payment method',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to delete payment method',
+        isLoading: false
       });
       throw error;
     }
@@ -290,22 +329,25 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
         success: boolean;
         data: PaymentMethod;
         message: string;
-      }>(`/payment-methods/${methodId}/default`);
+      }>(`/payments/payment-methods/${methodId}/default`);
 
       const defaultMethod = response.data;
       set((state) => ({
         paymentMethods: state.paymentMethods.map((method) => ({
           ...method,
-          is_default: method.id === methodId,
+          is_default: method.id === methodId
         })),
-        isLoading: false,
+        isLoading: false
       }));
 
       return defaultMethod;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to set default payment method',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to set default payment method',
+        isLoading: false
       });
       throw error;
     }
@@ -313,5 +355,5 @@ export const usePaymentStore = create<PaymentState>((set, get) => ({
 
   clearPayments: () => set({ payments: [], fees: null }),
   clearError: () => set({ error: null }),
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading: boolean) => set({ isLoading: loading })
 }));

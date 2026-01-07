@@ -112,13 +112,16 @@ export interface UserState {
   getProfile: () => Promise<User>;
   updateProfile: (updateData: UpdateUserDto) => Promise<User>;
   changePassword: (data: ChangePasswordDto) => Promise<void>;
-  
+
   // KYC Actions
   submitKYC: (kycData: KYCDataDto) => Promise<void>;
-  
+
   // Dashboard and Activity
   getDashboard: () => Promise<DashboardData>;
-  getActivityLog: (page?: number, limit?: number) => Promise<{
+  getActivityLog: (
+    page?: number,
+    limit?: number
+  ) => Promise<{
     activities: ActivityLog[];
     pagination: {
       page: number;
@@ -155,20 +158,23 @@ export const useUserStore = create<UserState>((set, get) => ({
       const response = await apiClient.get<{
         success: boolean;
         data: User;
-      }>('/user/profile');
+      }>('/users/profile');
 
       const user = response.data;
       set({
         user,
         profile: user,
-        isLoading: false,
+        isLoading: false
       });
 
       return user;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch profile',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch profile',
+        isLoading: false
       });
       throw error;
     }
@@ -178,7 +184,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const formData = new FormData();
-      
+
       // Add text fields
       Object.entries(updateData).forEach(([key, value]) => {
         if (key !== 'profile_image' && value !== undefined) {
@@ -187,7 +193,10 @@ export const useUserStore = create<UserState>((set, get) => ({
       });
 
       // Add file if present
-      if (updateData.profile_image && typeof updateData.profile_image === 'string') {
+      if (
+        updateData.profile_image &&
+        typeof updateData.profile_image === 'string'
+      ) {
         // If it's a string (path), just pass it
         formData.append('profile_image', updateData.profile_image);
       }
@@ -196,24 +205,27 @@ export const useUserStore = create<UserState>((set, get) => ({
         success: boolean;
         data: User;
         message: string;
-      }>('/user/profile', formData, {
+      }>('/users/profile', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       const updatedUser = response.data;
       set({
         user: updatedUser,
         profile: updatedUser,
-        isLoading: false,
+        isLoading: false
       });
 
       return updatedUser;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to update profile',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to update profile',
+        isLoading: false
       });
       throw error;
     }
@@ -225,13 +237,16 @@ export const useUserStore = create<UserState>((set, get) => ({
       await apiClient.post<{
         success: boolean;
         message: string;
-      }>('/user/change-password', data);
+      }>('/users/change-password', data);
 
       set({ isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to change password',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to change password',
+        isLoading: false
       });
       throw error;
     }
@@ -241,7 +256,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const formData = new FormData();
-      
+
       // Add text fields
       Object.entries(kycData).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -252,20 +267,23 @@ export const useUserStore = create<UserState>((set, get) => ({
       await apiClient.post<{
         success: boolean;
         message: string;
-      }>('/user/kyc/submit', formData, {
+      }>('/users/kyc/submit', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       // Refresh profile
       await get().getProfile();
-      
+
       set({ isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to submit KYC',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to submit KYC',
+        isLoading: false
       });
       throw error;
     }
@@ -277,19 +295,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       const response = await apiClient.get<{
         success: boolean;
         data: DashboardData;
-      }>('/user/dashboard');
+      }>('/users/dashboard');
 
       const dashboard = response.data;
       set({
         dashboard,
-        isLoading: false,
+        isLoading: false
       });
 
       return dashboard;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch dashboard',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch dashboard',
+        isLoading: false
       });
       throw error;
     }
@@ -307,21 +328,24 @@ export const useUserStore = create<UserState>((set, get) => ({
           total: number;
           pages: number;
         };
-      }>('/user/activity', { params: { page, limit } });
+      }>('/users/activity', { params: { page, limit } });
 
       set({
         activityLog: response.activities,
-        isLoading: false,
+        isLoading: false
       });
 
       return {
         activities: response.activities,
-        pagination: response.pagination,
+        pagination: response.pagination
       };
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch activity log',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch activity log',
+        isLoading: false
       });
       throw error;
     }
@@ -333,16 +357,19 @@ export const useUserStore = create<UserState>((set, get) => ({
       await apiClient.put<{
         success: boolean;
         message: string;
-      }>('/user/preferences', preferences);
+      }>('/users/preferences', preferences);
 
       // Refresh profile
       await get().getProfile();
-      
+
       set({ isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to update preferences',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to update preferences',
+        isLoading: false
       });
       throw error;
     }
@@ -354,16 +381,19 @@ export const useUserStore = create<UserState>((set, get) => ({
       await apiClient.put<{
         success: boolean;
         message: string;
-      }>('/user/two-factor', { enable });
+      }>('/users/two-factor', { enable });
 
       // Refresh profile
       await get().getProfile();
-      
+
       set({ isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to update two-factor authentication',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to update two-factor authentication',
+        isLoading: false
       });
       throw error;
     }
@@ -375,19 +405,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       await apiClient.delete<{
         success: boolean;
         message: string;
-      }>('/user/account', { data: { password } });
+      }>('/users/account', { data: { password } });
 
-      set({ 
+      set({
         user: null,
         profile: null,
         dashboard: null,
         activityLog: [],
-        isLoading: false,
+        isLoading: false
       });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to delete account',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to delete account',
+        isLoading: false
       });
       throw error;
     }
@@ -395,5 +428,5 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   setUser: (user: User | null) => set({ user }),
   clearError: () => set({ error: null }),
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading: boolean) => set({ isLoading: loading })
 }));

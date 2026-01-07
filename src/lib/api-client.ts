@@ -176,7 +176,7 @@ class ApiClient {
   }
 
   public initiateTransfer<T = any>(data: any): Promise<T> {
-    return this.post<T>('/transfers/transfer', data); // Changed from '/transfer/transfer'
+    return this.post<T>('/transfers', data); // Changed from '/transfer/transfer'
   }
 
   public getTransferFees<T = any>(
@@ -201,7 +201,7 @@ class ApiClient {
   // Other Routes (these should now work after adding them to api.routes.ts)
   // =================================================================
   public getCards<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/cards/cards', { params });
+    return this.get<T>('/cards', { params });
   }
 
   public getLoans<T = any>(params: any = {}): Promise<T> {
@@ -393,6 +393,48 @@ class ApiClient {
   }
 
   // =================================================================
+  // Deposits (Automated)
+  // =================================================================
+  public getDepositMethods<T = any>(): Promise<T> {
+    return this.get<T>('/deposits/methods');
+  }
+
+  public initiateDeposit<T = any>(data: any): Promise<T> {
+    return this.post<T>('/deposits', data);
+  }
+
+  public bankTransferDeposit<T = any>(formData: FormData): Promise<T> {
+    return this.post<T>('/deposits/bank-transfer', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  }
+
+  public cryptoDeposit<T = any>(data: any): Promise<T> {
+    return this.post<T>('/deposits/crypto', data);
+  }
+
+  public cardDeposit<T = any>(data: any): Promise<T> {
+    return this.post<T>('/deposits/card', data);
+  }
+
+  public getDeposits<T = any>(params: any = {}): Promise<T> {
+    return this.get<T>('/deposits', { params });
+  }
+
+  public getDepositDetails<T = any>(depositId: string): Promise<T> {
+    return this.get<T>(`/deposits/${depositId}`);
+  }
+
+  public cancelDeposit<T = any>(
+    depositId: string,
+    reason?: string
+  ): Promise<T> {
+    return this.post<T>(`/deposits/${depositId}/cancel`, { reason });
+  }
+
+  // =================================================================
   // Manual Deposits (User)
   // =================================================================
   public getCompanyAccountDetails<T = any>(
@@ -452,7 +494,7 @@ class ApiClient {
   // Transfers
   // =================================================================
   public validateRecipientAccount<T = any>(accountNumber: string): Promise<T> {
-    return this.get<T>('/transfer/validate-account', {
+    return this.get<T>('/transfers/validate-account', {
       params: { account_number: accountNumber }
     });
   }
@@ -466,7 +508,7 @@ class ApiClient {
   // }
 
   public getUserTransfers<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/transfers/transfers', { params });
+    return this.get<T>('/transfers', { params });
   }
 
   public getScheduledTransfers<T = any>(params: any = {}): Promise<T> {
@@ -481,7 +523,7 @@ class ApiClient {
   }
 
   public scheduleTransfer<T = any>(data: any): Promise<T> {
-    return this.post<T>('/transfer/schedule', data);
+    return this.post<T>('/transfers/schedule', data);
   }
 
   public cancelScheduledTransfer<T = any>(transferId: string): Promise<T> {
@@ -569,59 +611,59 @@ class ApiClient {
   // Cards
   // =================================================================
   public requestCard<T = any>(data: any): Promise<T> {
-    return this.post<T>('/cards/cards/request', data);
+    return this.post<T>('/cards/request', data);
   }
 
   public getUserCards<T = any>(params: any = {}): Promise<T> {
-    return this.get<T>('/cards/cards', { params });
+    return this.get<T>('/cards', { params });
   }
 
   public getCardTransactions<T = any>(
     cardId: string,
     params: any = {}
   ): Promise<T> {
-    return this.get<T>(`/cards/cards/${cardId}/transactions`, { params });
+    return this.get<T>(`/cards/${cardId}/transactions`, { params });
   }
 
   public getCardUsageSummary<T = any>(
     cardId: string,
     period: string = 'month'
   ): Promise<T> {
-    return this.get<T>(`/cards/cards/${cardId}/summary`, {
+    return this.get<T>(`/cards/${cardId}/summary`, {
       params: { period }
     });
   }
 
   public getCardDetails<T = any>(cardId: string): Promise<T> {
-    return this.get<T>(`/cards/cards/${cardId}`);
+    return this.get<T>(`/cards/${cardId}`);
   }
 
   public updateCard<T = any>(cardId: string, data: any): Promise<T> {
-    return this.put<T>(`/cards/cards/${cardId}`, data);
+    return this.put<T>(`/cards/${cardId}`, data);
   }
 
   public activateCard<T = any>(cardId: string): Promise<T> {
-    return this.post<T>(`/cards/cards/${cardId}/activate`);
+    return this.post<T>(`/cards/${cardId}/activate`);
   }
 
   public blockCard<T = any>(cardId: string, reason: string): Promise<T> {
-    return this.post<T>(`/cards/cards/${cardId}/block`, { reason });
+    return this.post<T>(`/cards/${cardId}/block`, { reason });
   }
 
   public reportCardLost<T = any>(cardId: string): Promise<T> {
-    return this.post<T>(`/cards/cards/${cardId}/report-lost`);
+    return this.post<T>(`/cards/${cardId}/report-lost`);
   }
 
   public reportCardStolen<T = any>(cardId: string): Promise<T> {
-    return this.post<T>(`/cards/cards/${cardId}/report-stolen`);
+    return this.post<T>(`/cards/${cardId}/report-stolen`);
   }
 
   public updateCardLimits<T = any>(cardId: string, limits: any): Promise<T> {
-    return this.put<T>(`/cards/cards/${cardId}/limits`, limits);
+    return this.put<T>(`/cards/${cardId}/limits`, limits);
   }
 
   public getVirtualCardDetails<T = any>(cardId: string): Promise<T> {
-    return this.get<T>(`/cards/cards/virtual/${cardId}`);
+    return this.get<T>(`/cards/virtual/${cardId}`);
   }
 
   public generateVirtualCard<T = any>(accountId: bigint): Promise<T> {

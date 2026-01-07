@@ -62,6 +62,7 @@ import {
 } from 'lucide-react';
 import { useAccount } from '@/hooks/useAccount';
 import { useUser } from '@/hooks/useUser';
+import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
@@ -73,9 +74,11 @@ export default function AccountsPage() {
     createAccount,
     updateAccount,
     closeAccount,
+    getAccountStatement,
     formatCurrency
   } = useAccount();
   const { user } = useUser();
+  const { toast } = useToast();
 
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -87,6 +90,9 @@ export default function AccountsPage() {
     account_type: 'checking',
     currency: user?.currency || 'USD'
   });
+  const [editAccountName, setEditAccountName] = useState('');
+  const [closeReason, setCloseReason] = useState('');
+  const [transferAccountId, setTransferAccountId] = useState('');
 
   useEffect(() => {
     loadAccounts();
@@ -97,6 +103,11 @@ export default function AccountsPage() {
       await getAccounts();
     } catch (error) {
       console.error('Failed to load accounts:', error);
+      toast({
+        title: 'Failed to load accounts',
+        description: 'Please try again in a moment.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -117,8 +128,134 @@ export default function AccountsPage() {
         currency: user?.currency || 'USD'
       });
       await loadAccounts();
+      toast({
+        title: 'Account created',
+        description: 'Your new account is ready.'
+      });
     } catch (error) {
       console.error('Failed to create account:', error);
+      toast({
+        title: 'Account creation failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleUpdateAccount = async () => {
+    if (!selectedAccount) return;
+    try {
+      await updateAccount(selectedAccount.id, {
+        account_name: editAccountName
+      });
+      setShowEditDialog(false);
+      await loadAccounts();
+      toast({
+        title: 'Account updated',
+        description: 'Account details saved.'
+      });
+    } catch (error) {
+      console.error('Failed to update account:', error);
+      toast({
+        title: 'Update failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCloseAccount = async () => {
+    if (!selectedAccount || !closeReason) {
+      toast({
+        title: 'Reason required',
+        description: 'Please provide a reason to close the account.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await closeAccount(
+        selectedAccount.id,
+        closeReason,
+        transferAccountId || undefined
+      );
+      setShowCloseDialog(false);
+      setCloseReason('');
+      setTransferAccountId('');
+      await loadAccounts();
+      toast({
+        title: 'Account closed',
+        description: 'The account has been closed successfully.'
+      });
+    } catch (error) {
+      console.error('Failed to close account:', error);
+      toast({
+        title: 'Close failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const exportToCsv = (rows: Record<string, any>[], filename: string) => {
+    if (!rows.length) {
+      toast({
+        title: 'Nothing to export',
+        description: 'No statement data available.'
+      });
+      return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(','),
+      ...rows.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header] ?? '';
+            const escaped = String(value).replace(/\"/g, '\"\"');
+            return `\"${escaped}\"`;
+          })
+          .join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadStatement = async (account: any) => {
+    try {
+      const statement = await getAccountStatement(account.id);
+      const rows = (
+        statement?.transactions ||
+        statement?.data ||
+        statement ||
+        []
+      ).map((tx: any) => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount,
+        status: tx.status,
+        description: tx.description,
+        created_at: tx.created_at
+      }));
+      exportToCsv(rows, `account-${account.account_number}-statement.csv`);
+    } catch (error) {
+      console.error('Failed to download statement:', error);
+      toast({
+        title: 'Statement download failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -345,13 +482,16 @@ export default function AccountsPage() {
                               <DropdownMenuItem
                                 onClick={() => {
                                   setSelectedAccount(account);
+                                  setEditAccountName(account.account_name);
                                   setShowEditDialog(true);
                                 }}
                               >
                                 <Edit className='mr-2 h-4 w-4' />
                                 Edit Account
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDownloadStatement(account)}
+                              >
                                 <Download className='mr-2 h-4 w-4' />
                                 Download Statement
                               </DropdownMenuItem>
@@ -433,7 +573,15 @@ export default function AccountsPage() {
                       </CardContent>
 
                       <CardFooter className='pt-0'>
-                        <Button variant='outline' className='w-full'>
+                        <Button
+                          variant='outline'
+                          className='w-full'
+                          onClick={() =>
+                            document
+                              .getElementById('accounts-table')
+                              ?.scrollIntoView({ behavior: 'smooth' })
+                          }
+                        >
                           <ArrowUpRight className='mr-2 h-4 w-4' />
                           View Transactions
                         </Button>
@@ -465,7 +613,7 @@ export default function AccountsPage() {
         </Tabs>
 
         {/* Accounts Table */}
-        <Card>
+        <Card id='accounts-table'>
           <CardHeader>
             <CardTitle>All Accounts</CardTitle>
             <CardDescription>
@@ -544,11 +692,19 @@ export default function AccountsPage() {
                             <Eye className='mr-2 h-4 w-4' />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedAccount(account);
+                              setEditAccountName(account.account_name);
+                              setShowEditDialog(true);
+                            }}
+                          >
                             <Edit className='mr-2 h-4 w-4' />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDownloadStatement(account)}
+                          >
                             <Download className='mr-2 h-4 w-4' />
                             Statement
                           </DropdownMenuItem>
@@ -628,7 +784,8 @@ export default function AccountsPage() {
                 <Label htmlFor='edit-account-name'>Account Name</Label>
                 <Input
                   id='edit-account-name'
-                  defaultValue={selectedAccount.account_name}
+                  value={editAccountName}
+                  onChange={(e) => setEditAccountName(e.target.value)}
                 />
               </div>
 
@@ -639,13 +796,75 @@ export default function AccountsPage() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={async () => {
-                    // Handle update
-                    setShowEditDialog(false);
-                  }}
-                >
+                <Button onClick={handleUpdateAccount} disabled={isLoading}>
                   Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Close Account Dialog */}
+      <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Close Account</DialogTitle>
+            <DialogDescription>
+              Closing an account is permanent. Please confirm and provide a
+              reason.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAccount && (
+            <div className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='close-reason'>Reason</Label>
+                <Textarea
+                  id='close-reason'
+                  placeholder='Provide a reason for closing this account'
+                  value={closeReason}
+                  onChange={(e) => setCloseReason(e.target.value)}
+                />
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='transfer-account'>
+                  Transfer Remaining Balance (optional)
+                </Label>
+                <Select
+                  value={transferAccountId}
+                  onValueChange={setTransferAccountId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select an account' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts
+                      .filter((acc) => acc.id !== selectedAccount.id)
+                      .map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.account_name} ••••
+                          {account.account_number.slice(-4)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className='flex justify-end gap-3'>
+                <Button
+                  variant='outline'
+                  onClick={() => setShowCloseDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant='destructive'
+                  onClick={handleCloseAccount}
+                  disabled={isLoading}
+                >
+                  Close Account
                 </Button>
               </div>
             </div>

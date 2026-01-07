@@ -39,9 +39,18 @@ export interface ManualDepositState {
 
   // Actions
   createManualDeposit: (depositData: any) => Promise<any>;
-  uploadProof: (depositId: string, file: File, notes?: string) => Promise<ManualDeposit>;
-  getDeposits: (filters?: any) => Promise<{ deposits: ManualDeposit[]; pagination: any }>;
-  getCompanyAccountDetails: (method: string, currency?: string) => Promise<CompanyAccountDetails>;
+  uploadProof: (
+    depositId: string,
+    file: File,
+    notes?: string
+  ) => Promise<ManualDeposit>;
+  getDeposits: (
+    filters?: any
+  ) => Promise<{ deposits: ManualDeposit[]; pagination: any }>;
+  getCompanyAccountDetails: (
+    method: string,
+    currency?: string
+  ) => Promise<CompanyAccountDetails>;
 
   // UI Actions
   clearDeposits: () => void;
@@ -58,20 +67,23 @@ export const useManualDepositStore = create<ManualDepositState>((set, get) => ({
   createManualDeposit: async (depositData: any) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.post('/deposits/manual', depositData);
+      const response = await apiClient.createManualDeposit(depositData);
       const data = response.data;
-      
+
       set((state) => ({
         deposits: [data.deposit, ...state.deposits],
         companyAccount: data.company_account,
-        isLoading: false,
+        isLoading: false
       }));
 
       return data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to create deposit',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to create deposit',
+        isLoading: false
       });
       throw error;
     }
@@ -86,23 +98,22 @@ export const useManualDepositStore = create<ManualDepositState>((set, get) => ({
         formData.append('additional_notes', notes);
       }
 
-      const response = await apiClient.put(`/deposits/manual/${depositId}/proof`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await apiClient.uploadDepositProof(depositId, formData);
 
       const deposit = response.data;
       set((state) => ({
-        deposits: state.deposits.map(d => 
-          d.id === depositId ? deposit : d
-        ),
-        isLoading: false,
+        deposits: state.deposits.map((d) => (d.id === depositId ? deposit : d)),
+        isLoading: false
       }));
 
       return deposit;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to upload proof',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to upload proof',
+        isLoading: false
       });
       throw error;
     }
@@ -111,19 +122,25 @@ export const useManualDepositStore = create<ManualDepositState>((set, get) => ({
   getDeposits: async (filters?: any) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.get('/deposits/manual/history', { params: filters });
-      const data = response.data;
-      
+      const response = await apiClient.getManualDeposits(filters);
+      const data = response.data ?? response;
+      const deposits = Array.isArray(data)
+        ? data
+        : data.deposits || data.data || [];
+
       set({
-        deposits: data.deposits,
-        isLoading: false,
+        deposits,
+        isLoading: false
       });
 
       return data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch deposits',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch deposits',
+        isLoading: false
       });
       throw error;
     }
@@ -132,19 +149,25 @@ export const useManualDepositStore = create<ManualDepositState>((set, get) => ({
   getCompanyAccountDetails: async (method: string, currency = 'USD') => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.get(`/deposits/manual/company-account/${method}/${currency}`);
+      const response = await apiClient.getCompanyAccountDetails(
+        method,
+        currency
+      );
       const details = response.data;
-      
+
       set({
         companyAccount: details,
-        isLoading: false,
+        isLoading: false
       });
 
       return details;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch company account',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch company account',
+        isLoading: false
       });
       throw error;
     }
@@ -152,5 +175,5 @@ export const useManualDepositStore = create<ManualDepositState>((set, get) => ({
 
   clearDeposits: () => set({ deposits: [], companyAccount: null }),
   clearError: () => set({ error: null }),
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading: boolean) => set({ isLoading: loading })
 }));

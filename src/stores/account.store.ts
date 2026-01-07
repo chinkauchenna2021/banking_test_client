@@ -59,14 +59,23 @@ export interface AccountState {
 
   // Account Actions
   createAccount: (accountData: any) => Promise<Account>;
-  getAccounts: (params?: any) => Promise<{ accounts: Account[]; pagination: any }>;
+  getAccounts: (
+    params?: any
+  ) => Promise<{ accounts: Account[]; pagination: any }>;
   getAccountDetails: (accountId: string) => Promise<Account>;
   updateAccount: (accountId: string, updateData: any) => Promise<Account>;
-  closeAccount: (accountId: string, reason: string, transferAccountId?: string) => Promise<void>;
-  
+  closeAccount: (
+    accountId: string,
+    reason: string,
+    transferAccountId?: string
+  ) => Promise<void>;
+
   // Account Operations
   getAccountBalance: (accountId: string) => Promise<any>;
-  getAccountTransactions: (accountId: string, params?: any) => Promise<{ transactions: Transaction[]; pagination: any }>;
+  getAccountTransactions: (
+    accountId: string,
+    params?: any
+  ) => Promise<{ transactions: Transaction[]; pagination: any }>;
   getAccountStatement: (accountId: string, params?: any) => Promise<any>;
   internalTransfer: (data: {
     from_account_id: string;
@@ -96,19 +105,22 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         success: boolean;
         data: Account;
         message: string;
-      }>('/accounts/accounts', accountData);
+      }>('/accounts', accountData);
 
       const newAccount = response.data;
       set((state) => ({
         accounts: [...state.accounts, newAccount],
-        isLoading: false,
+        isLoading: false
       }));
 
       return newAccount;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to create account',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to create account',
+        isLoading: false
       });
       throw error;
     }
@@ -121,18 +133,21 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         success: boolean;
         accounts: Account[];
         pagination: any;
-      }>('/accounts/accounts', { params });
+      }>('/accounts', { params });
 
       set({
         accounts: response.accounts,
-        isLoading: false,
+        isLoading: false
       });
 
       return response;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch accounts',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch accounts',
+        isLoading: false
       });
       throw error;
     }
@@ -144,19 +159,22 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       const response = await apiClient.get<{
         success: boolean;
         data: Account;
-      }>(`/accounts/accounts/${accountId}`);
+      }>(`/accounts/${accountId}`);
 
       const account = response.data;
       set({
         currentAccount: account,
-        isLoading: false,
+        isLoading: false
       });
 
       return account;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch account details',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch account details',
+        isLoading: false
       });
       throw error;
     }
@@ -169,7 +187,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         success: boolean;
         data: Account;
         message: string;
-      }>(`/accounts/accounts/${accountId}`, updateData);
+      }>(`/accounts/${accountId}`, updateData);
 
       const updatedAccount = response.data;
       set((state) => ({
@@ -177,36 +195,49 @@ export const useAccountStore = create<AccountState>((set, get) => ({
           acc.id === accountId ? updatedAccount : acc
         ),
         currentAccount:
-          state.currentAccount?.id === accountId ? updatedAccount : state.currentAccount,
-        isLoading: false,
+          state.currentAccount?.id === accountId
+            ? updatedAccount
+            : state.currentAccount,
+        isLoading: false
       }));
 
       return updatedAccount;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to update account',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to update account',
+        isLoading: false
       });
       throw error;
     }
   },
 
-  closeAccount: async (accountId: string, reason: string, transferAccountId?: string) => {
+  closeAccount: async (
+    accountId: string,
+    reason: string,
+    transferAccountId?: string
+  ) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/accounts/accounts/${accountId}`, {
-        data: { reason, transfer_account_id: transferAccountId },
+      await apiClient.delete(`/accounts/${accountId}`, {
+        data: { reason, transfer_account_id: transferAccountId }
       });
 
       set((state) => ({
         accounts: state.accounts.filter((acc) => acc.id !== accountId),
-        currentAccount: state.currentAccount?.id === accountId ? null : state.currentAccount,
-        isLoading: false,
+        currentAccount:
+          state.currentAccount?.id === accountId ? null : state.currentAccount,
+        isLoading: false
       }));
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to close account',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to close account',
+        isLoading: false
       });
       throw error;
     }
@@ -218,14 +249,17 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       const response = await apiClient.get<{
         success: boolean;
         data: any;
-      }>(`/accounts/accounts/${accountId}/balance`);
+      }>(`/accounts/${accountId}/balance`);
 
       set({ isLoading: false });
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch balance',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch balance',
+        isLoading: false
       });
       throw error;
     }
@@ -238,18 +272,21 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         success: boolean;
         transactions: Transaction[];
         pagination: any;
-      }>(`/accounts/accounts/${accountId}/transactions`, { params });
+      }>(`/accounts/${accountId}/transactions`, { params });
 
       set({
         transactions: response.transactions,
-        isLoading: false,
+        isLoading: false
       });
 
       return response;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch transactions',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch transactions',
+        isLoading: false
       });
       throw error;
     }
@@ -261,14 +298,17 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       const response = await apiClient.get<{
         success: boolean;
         data: any;
-      }>(`/accounts/accounts/${accountId}/statement`, { params });
+      }>(`/accounts/${accountId}/statement`, { params });
 
       set({ isLoading: false });
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch statement',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch statement',
+        isLoading: false
       });
       throw error;
     }
@@ -299,14 +339,16 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Transfer failed',
-        isLoading: false,
+        error:
+          error.response?.data?.error || error.message || 'Transfer failed',
+        isLoading: false
       });
       throw error;
     }
   },
 
-  setCurrentAccount: (account: Account | null) => set({ currentAccount: account }),
+  setCurrentAccount: (account: Account | null) =>
+    set({ currentAccount: account }),
   clearError: () => set({ error: null }),
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading: boolean) => set({ isLoading: loading })
 }));

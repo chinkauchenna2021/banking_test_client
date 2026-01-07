@@ -36,6 +36,7 @@ import { useTransfer } from '@/hooks/useTransfer';
 import { useCard } from '@/hooks/useCard';
 import { useLoan } from '@/hooks/useLoan';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import QuickTransferModal from '@/components/modals/QuickTransferModal';
 import DepositModal from '@/components/modals/DepositModal';
@@ -51,6 +52,7 @@ export default function DashboardPage() {
   const { activeCards, totalSpent } = useCard();
   const { activeLoans, outstandingBalance } = useLoan();
   const { userAnalytics, getPredictiveInsights } = useAnalytics();
+  const { toast } = useToast();
 
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);

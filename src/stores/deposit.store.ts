@@ -1,5 +1,5 @@
-import { apiClient } from "@/lib/api-client";
-import { create } from "zustand";
+import { apiClient } from '@/lib/api-client';
+import { create } from 'zustand';
 
 // Client-side definition of DepositMethod enum
 export enum DepositMethod {
@@ -8,7 +8,7 @@ export enum DepositMethod {
   card = 'card',
   mobile_money = 'mobile_money',
   paypal = 'paypal',
-  wire_transfer = 'wire_transfer',
+  wire_transfer = 'wire_transfer'
 }
 
 // Interface for items returned by getDepositMethods
@@ -40,7 +40,7 @@ export interface ClientDeposit {
   receipt_url: string | null;
   created_at: Date;
   updated_at: Date;
-  account?: { account_number: string; account_name: string; }; // Added account property
+  account?: { account_number: string; account_name: string }; // Added account property
   // Add other properties as needed by the client
 }
 
@@ -62,9 +62,21 @@ interface DepositState {
   } | null;
 
   // User actions
-  getCompanyAccountDetails: (method: DepositMethod, currency: string) => Promise<any>;
-  createManualDeposit: (data: { amount: number; currency: string; method: DepositMethod; account_id: bigint }) => Promise<ManualDeposit>;
-  uploadDepositProof: (depositId: string, file: File, notes?: string) => Promise<ManualDeposit>;
+  getCompanyAccountDetails: (
+    method: DepositMethod,
+    currency: string
+  ) => Promise<any>;
+  createManualDeposit: (data: {
+    amount: number;
+    currency: string;
+    method: DepositMethod;
+    account_id: bigint;
+  }) => Promise<ManualDeposit>;
+  uploadDepositProof: (
+    depositId: string,
+    file: File,
+    notes?: string
+  ) => Promise<ManualDeposit>;
   fetchUserDeposits: (params?: any) => Promise<void>;
   getDepositMethods: () => Promise<void>; // Added this
 
@@ -95,7 +107,10 @@ export const useDepositStore = create<DepositState>((set, get) => ({
   getCompanyAccountDetails: async (method, currency) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getCompanyAccountDetails<{ data: any }>(method, currency);
+      const response = await apiClient.getCompanyAccountDetails<{ data: any }>(
+        method,
+        currency
+      );
       set({ companyAccountDetails: response.data, isLoading: false });
       return response.data;
     } catch (error: any) {
@@ -108,11 +123,13 @@ export const useDepositStore = create<DepositState>((set, get) => ({
   createManualDeposit: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.createManualDeposit<{ data: ManualDeposit }>(data);
+      const response = await apiClient.initiateDeposit<{ data: ManualDeposit }>(
+        data
+      );
       // Add to the start of the user deposits list
       set((state) => ({
         userDeposits: [response.data, ...state.userDeposits],
-        isLoading: false,
+        isLoading: false
       }));
       return response.data;
     } catch (error: any) {
@@ -131,14 +148,16 @@ export const useDepositStore = create<DepositState>((set, get) => ({
         formData.append('additional_notes', notes);
       }
 
-      const response = await apiClient.uploadDepositProof<{ data: ManualDeposit }>(depositId, formData);
-      
+      const response = await apiClient.uploadDepositProof<{
+        data: ManualDeposit;
+      }>(depositId, formData);
+
       // Update the specific deposit in the list
       set((state) => ({
         userDeposits: state.userDeposits.map((d) =>
           d.id === depositId ? response.data : d
         ),
-        isUploading: false,
+        isUploading: false
       }));
       return response.data;
     } catch (error: any) {
@@ -151,11 +170,14 @@ export const useDepositStore = create<DepositState>((set, get) => ({
   fetchUserDeposits: async (params) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getManualDeposits<{ data: ManualDeposit[], pagination: any }>(params);
+      const response = await apiClient.getDeposits<{
+        data: ManualDeposit[];
+        pagination: any;
+      }>(params);
       set({
         userDeposits: response.data,
         pagination: response.pagination,
-        isLoading: false,
+        isLoading: false
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
@@ -166,7 +188,9 @@ export const useDepositStore = create<DepositState>((set, get) => ({
   getDepositMethods: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getManualDeposits<{ data: DepositMethodItem[] }>();
+      const response = await apiClient.getDepositMethods<{
+        data: DepositMethodItem[];
+      }>();
       set({ depositMethods: response.data, isLoading: false });
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
@@ -181,11 +205,14 @@ export const useDepositStore = create<DepositState>((set, get) => ({
   fetchPendingDeposits: async (params) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.getPendingManualDeposits<{ data: ManualDeposit[], pagination: any }>(params);
+      const response = await apiClient.getPendingManualDeposits<{
+        data: ManualDeposit[];
+        pagination: any;
+      }>(params);
       set({
         pendingDeposits: response.data,
         pagination: response.pagination,
-        isLoading: false,
+        isLoading: false
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
@@ -199,8 +226,10 @@ export const useDepositStore = create<DepositState>((set, get) => ({
       await apiClient.confirmManualDeposit(depositId, notes);
       // Remove from pending list
       set((state) => ({
-        pendingDeposits: state.pendingDeposits.filter((d) => d.id !== depositId),
-        isLoading: false,
+        pendingDeposits: state.pendingDeposits.filter(
+          (d) => d.id !== depositId
+        ),
+        isLoading: false
       }));
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
@@ -215,13 +244,15 @@ export const useDepositStore = create<DepositState>((set, get) => ({
       await apiClient.rejectManualDeposit(depositId, reason);
       // Remove from pending list
       set((state) => ({
-        pendingDeposits: state.pendingDeposits.filter((d) => d.id !== depositId),
-        isLoading: false,
+        pendingDeposits: state.pendingDeposits.filter(
+          (d) => d.id !== depositId
+        ),
+        isLoading: false
       }));
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message;
       set({ error: errorMessage, isLoading: false });
       throw new Error(errorMessage);
     }
-  },
+  }
 }));

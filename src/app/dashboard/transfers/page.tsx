@@ -68,6 +68,7 @@ import { useTransfer } from '@/hooks/useTransfer';
 import { UserTransfer } from '@/stores/transfer.store';
 import { useAccount } from '@/hooks/useAccount';
 import { useUser } from '@/hooks/useUser';
+import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 
@@ -79,12 +80,14 @@ export default function TransfersPage() {
     getScheduledTransfers,
     quickTransfer,
     quickScheduleTransfer,
+    cancelScheduledTransfer,
     formatCurrency,
     formatTransferDate
   } = useTransfer();
 
   const { accounts, getAccounts } = useAccount();
   const { user } = useUser();
+  const { toast } = useToast();
 
   const [transferData, setTransferData] = useState({
     fromAccount: '',
@@ -125,6 +128,11 @@ export default function TransfersPage() {
       ]);
     } catch (error) {
       console.error('Failed to load transfer data:', error);
+      toast({
+        title: 'Failed to load transfers',
+        description: 'Please try again in a moment.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -159,6 +167,11 @@ export default function TransfersPage() {
       await getTransfers();
     } catch (error) {
       console.error('Transfer failed:', error);
+      toast({
+        title: 'Transfer failed',
+        description: 'Please check your details and try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -192,9 +205,65 @@ export default function TransfersPage() {
       await getScheduledTransfers();
     } catch (error) {
       console.error('Schedule failed:', error);
+      toast({
+        title: 'Scheduling failed',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancelScheduled = async (transferId: string) => {
+    try {
+      await cancelScheduledTransfer(transferId);
+      toast({
+        title: 'Transfer cancelled',
+        description: 'Scheduled transfer has been cancelled.'
+      });
+      await getScheduledTransfers();
+    } catch (error: any) {
+      toast({
+        title: 'Failed to cancel transfer',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const exportToCsv = (rows: Record<string, any>[], filename: string) => {
+    if (!rows.length) {
+      toast({
+        title: 'Nothing to export',
+        description: 'No transfers available for export.'
+      });
+      return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(','),
+      ...rows.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header] ?? '';
+            const escaped = String(value).replace(/\"/g, '\"\"');
+            return `\"${escaped}\"`;
+          })
+          .join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const getStatusIcon = (status: string) => {
@@ -242,6 +311,17 @@ export default function TransfersPage() {
         transfers.length > 0 ? (completed.length / transfers.length) * 100 : 0
     };
   };
+
+  const filteredTransfers = transfers.filter((transfer: UserTransfer) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      transfer.transfer_reference?.toLowerCase().includes(query) ||
+      transfer.description?.toLowerCase().includes(query) ||
+      transfer.recipient_bank?.toLowerCase().includes(query) ||
+      transfer.recipient_routing_number?.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <PageContainer
@@ -410,7 +490,13 @@ export default function TransfersPage() {
               </DialogContent>
             </Dialog>
 
-            <Button>
+            <Button
+              onClick={() =>
+                document
+                  .getElementById('transfer-form')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }
+            >
               <Send className='mr-2 h-4 w-4' />
               New Transfer
             </Button>
@@ -488,7 +574,7 @@ export default function TransfersPage() {
           <TabsContent value='send'>
             <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
               {/* Transfer Form */}
-              <Card className='lg:col-span-2'>
+              <Card className='lg:col-span-2' id='transfer-form'>
                 <CardHeader>
                   <CardTitle>Make a Transfer</CardTitle>
                   <CardDescription>
@@ -722,7 +808,11 @@ export default function TransfersPage() {
                                 )}
                               </div>
                             </div>
-                            <Button variant='ghost' size='sm'>
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              onClick={() => handleCancelScheduled(transfer.id)}
+                            >
                               Cancel
                             </Button>
                           </div>
@@ -776,7 +866,23 @@ export default function TransfersPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
-                    <Button variant='outline'>
+                    <Button
+                      variant='outline'
+                      onClick={() =>
+                        exportToCsv(
+                          filteredTransfers.map((transfer: UserTransfer) => ({
+                            id: transfer.id,
+                            reference: transfer.transfer_reference,
+                            amount: transfer.amount,
+                            currency: transfer.currency,
+                            status: transfer.status,
+                            description: transfer.description,
+                            created_at: transfer.created_at
+                          })),
+                          'transfers.csv'
+                        )
+                      }
+                    >
                       <Download className='mr-2 h-4 w-4' />
                       Export
                     </Button>
@@ -798,77 +904,79 @@ export default function TransfersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transfers.slice(0, 10).map((transfer: UserTransfer) => (
-                      <TableRow key={transfer.id}>
-                        <TableCell className='font-medium'>
-                          {formatTransferDate(transfer.created_at)}
-                        </TableCell>
-                        <TableCell>
-                          {transfer.description || 'Transfer'}
-                        </TableCell>
-                        <TableCell>
-                          <div className='flex items-center gap-2'>
-                            {transfer.sender_account_id ? (
-                              <ArrowUpRight className='h-4 w-4 text-red-500' />
-                            ) : (
-                              <ArrowDownRight className='h-4 w-4 text-green-500' />
-                            )}
-                            <span className='max-w-[120px] truncate'>
-                              {transfer.sender_account_id
-                                ? 'Outgoing'
-                                : 'Incoming'}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className='font-semibold'>
-                          {formatCurrency(transfer.amount, transfer.currency)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant='outline'
-                            className={getStatusColor(transfer.status)}
-                          >
-                            <div className='flex items-center gap-1'>
-                              {getStatusIcon(transfer.status)}
-                              {transfer.status}
-                            </div>
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {transfer.recipient_bank && (
-                            <div className='text-muted-foreground text-sm'>
-                              <div className='font-medium'>
-                                {transfer.recipient_bank}
-                              </div>
-                              {transfer.recipient_routing_number && (
-                                <div className='text-xs'>
-                                  Routing: {transfer.recipient_routing_number}
-                                </div>
+                    {filteredTransfers
+                      .slice(0, 10)
+                      .map((transfer: UserTransfer) => (
+                        <TableRow key={transfer.id}>
+                          <TableCell className='font-medium'>
+                            {formatTransferDate(transfer.created_at)}
+                          </TableCell>
+                          <TableCell>
+                            {transfer.description || 'Transfer'}
+                          </TableCell>
+                          <TableCell>
+                            <div className='flex items-center gap-2'>
+                              {transfer.sender_account_id ? (
+                                <ArrowUpRight className='h-4 w-4 text-red-500' />
+                              ) : (
+                                <ArrowDownRight className='h-4 w-4 text-green-500' />
                               )}
+                              <span className='max-w-[120px] truncate'>
+                                {transfer.sender_account_id
+                                  ? 'Outgoing'
+                                  : 'Incoming'}
+                              </span>
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell className='text-right'>
-                          <div className='flex items-center justify-end gap-2'>
-                            <span className='font-mono text-sm'>
-                              {transfer.transfer_reference?.slice(0, 8)}...
-                            </span>
-                            <Button
-                              variant='ghost'
-                              size='icon'
-                              className='h-6 w-6'
-                              onClick={() =>
-                                navigator.clipboard.writeText(
-                                  transfer.transfer_reference || ''
-                                )
-                              }
+                          </TableCell>
+                          <TableCell className='font-semibold'>
+                            {formatCurrency(transfer.amount, transfer.currency)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant='outline'
+                              className={getStatusColor(transfer.status)}
                             >
-                              <Copy className='h-3 w-3' />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              <div className='flex items-center gap-1'>
+                                {getStatusIcon(transfer.status)}
+                                {transfer.status}
+                              </div>
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {transfer.recipient_bank && (
+                              <div className='text-muted-foreground text-sm'>
+                                <div className='font-medium'>
+                                  {transfer.recipient_bank}
+                                </div>
+                                {transfer.recipient_routing_number && (
+                                  <div className='text-xs'>
+                                    Routing: {transfer.recipient_routing_number}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className='text-right'>
+                            <div className='flex items-center justify-end gap-2'>
+                              <span className='font-mono text-sm'>
+                                {transfer.transfer_reference?.slice(0, 8)}...
+                              </span>
+                              <Button
+                                variant='ghost'
+                                size='icon'
+                                className='h-6 w-6'
+                                onClick={() =>
+                                  navigator.clipboard.writeText(
+                                    transfer.transfer_reference || ''
+                                  )
+                                }
+                              >
+                                <Copy className='h-3 w-3' />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </CardContent>

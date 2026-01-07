@@ -69,10 +69,12 @@ import {
 } from 'lucide-react';
 import { useContact } from '@/hooks/useContact';
 import { useUser } from '@/hooks/useUser';
+import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 
 export default function ContactPage() {
   const {
+    categories,
     faqs,
     isLoading,
     supportHours,
@@ -82,17 +84,18 @@ export default function ContactPage() {
     getSupportHours,
     getResponseTime,
     validateContactForm,
-    getResponseTimeStatus
+    searchFaqs
   } = useContact();
 
   const { user } = useUser();
+  const { toast } = useToast();
 
   const [selectedTab, setSelectedTab] = useState('contact');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [messageData, setMessageData] = useState({
+  const getDefaultMessageData = () => ({
     name: user ? `${user.first_name} ${user.last_name}` : '',
     email: user?.email || '',
     phone: '',
@@ -103,6 +106,8 @@ export default function ContactPage() {
     priority: 'normal'
   });
 
+  const [messageData, setMessageData] = useState(getDefaultMessageData());
+
   useEffect(() => {
     loadContactData();
   }, []);
@@ -112,6 +117,11 @@ export default function ContactPage() {
       await Promise.all([getFaqs(), getSupportHours(), getResponseTime()]);
     } catch (error) {
       console.error('Failed to load contact data:', error);
+      toast({
+        title: 'Failed to load support data',
+        description: 'Please try again later.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -151,6 +161,107 @@ export default function ContactPage() {
     availability: '24/7 for emergency, Mon-Fri 9-5 for general inquiries'
   };
 
+  const fallbackFaqs = [
+    {
+      question: 'How do I open a new account?',
+      answer:
+        'You can open a new account through our website or mobile app. Navigate to the Accounts section and select New Account. You will need to provide basic information and verify your identity.',
+      category: 'Account'
+    },
+    {
+      question: 'Is my money safe with your bank?',
+      answer:
+        'Yes, all deposits are insured up to $250,000 by the FDIC. We use bank-level encryption and security measures to protect your information.',
+      category: 'Security'
+    },
+    {
+      question: 'How long do transfers take?',
+      answer:
+        'Internal transfers are instant. External transfers typically take 1-3 business days. International transfers may take 3-5 business days.',
+      category: 'Transactions'
+    }
+  ];
+
+  const baseFaqs = faqs.length ? faqs : fallbackFaqs;
+  const searchedFaqs = searchQuery
+    ? faqs.length
+      ? searchFaqs(searchQuery)
+      : baseFaqs.filter((faq) => {
+          const query = searchQuery.toLowerCase();
+          return (
+            faq.question.toLowerCase().includes(query) ||
+            faq.answer.toLowerCase().includes(query)
+          );
+        })
+    : baseFaqs;
+
+  const filteredFaqs = searchedFaqs.filter((faq) =>
+    selectedCategory === 'all' ? true : faq.category === selectedCategory
+  );
+
+  const categoryOptions = Array.from(
+    new Set(
+      (categories.length
+        ? categories.map((category) => category.name)
+        : baseFaqs.map((faq) => faq.category)
+      ).filter(Boolean)
+    )
+  );
+
+  const supportHoursData = supportHours || {
+    email: '24/7 response within 24 hours',
+    phone: 'Mon-Fri: 8:00 AM - 8:00 PM EST\nSat-Sun: 9:00 AM - 5:00 PM EST',
+    chat: '24/7 availability for all customers',
+    holidays: [
+      "New Year's Day: Closed",
+      'Memorial Day: Limited support',
+      'Independence Day: Closed',
+      'Labor Day: Limited support',
+      'Thanksgiving: Closed',
+      'Christmas Day: Closed'
+    ]
+  };
+
+  const phoneLines = supportHoursData.phone.split('\n');
+  const isSending = isSubmitting || isLoading;
+
+  const handleSendMessage = async () => {
+    const validation = validateContactForm(messageData);
+    if (!validation.valid) {
+      toast({
+        title: 'Please check your message',
+        description: validation.errors[0],
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setShowSuccess(false);
+
+    try {
+      await sendMessage(messageData);
+      toast({
+        title: 'Message sent',
+        description: 'Our support team will get back to you soon.'
+      });
+      setShowSuccess(true);
+      setMessageData(getDefaultMessageData());
+    } catch (error: any) {
+      toast({
+        title: 'Failed to send message',
+        description: error?.message || 'Please try again later.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickAction = (title: string, description: string) => {
+    toast({ title, description });
+  };
+
   return (
     <PageContainer
       scrollable
@@ -170,7 +281,15 @@ export default function ContactPage() {
           </div>
 
           <div className='flex items-center gap-2'>
-            <Button variant='outline'>
+            <Button
+              variant='outline'
+              onClick={() =>
+                handleQuickAction(
+                  'Help Center',
+                  'We can connect you with our support knowledge base.'
+                )
+              }
+            >
               <LifeBuoy className='mr-2 h-4 w-4' />
               Help Center
             </Button>
@@ -413,12 +532,18 @@ export default function ContactPage() {
                       />
                     </div>
 
+                    {showSuccess && (
+                      <div className='rounded-md bg-green-50 p-3 text-sm text-green-700'>
+                        Message sent successfully. We will respond shortly.
+                      </div>
+                    )}
                     <Button
                       className='w-full'
-                      disabled={isLoading ? true : false}
+                      onClick={handleSendMessage}
+                      disabled={isSending}
                     >
                       <Send className='mr-2 h-4 w-4' />
-                      {isLoading ? 'Loading...' : 'Send Message'}
+                      {isSending ? 'Sending...' : 'Send Message'}
                     </Button>
                   </div>
                 </CardContent>
@@ -488,8 +613,8 @@ export default function ContactPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className='mb-6'>
-                  <div className='relative'>
+                <div className='mb-6 flex flex-col gap-3 md:flex-row md:items-center'>
+                  <div className='relative flex-1'>
                     <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform' />
                     <Input
                       placeholder='Search FAQs...'
@@ -498,88 +623,58 @@ export default function ContactPage() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={setSelectedCategory}
+                  >
+                    <SelectTrigger className='md:w-56'>
+                      <SelectValue placeholder='Filter by category' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='all'>All</SelectItem>
+                      {categoryOptions.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <Accordion type='single' collapsible className='space-y-4'>
-                  <AccordionItem
-                    value='account'
-                    className='rounded-lg border px-4'
-                  >
-                    <AccordionTrigger className='hover:no-underline'>
-                      <div className='flex items-start gap-3 text-left'>
-                        <HelpCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600' />
-                        <div>
-                          <div className='font-semibold'>
-                            How do I open a new account?
+                {filteredFaqs.length ? (
+                  <Accordion type='single' collapsible className='space-y-4'>
+                    {filteredFaqs.map((faq) => (
+                      <AccordionItem
+                        key={faq.question}
+                        value={faq.question}
+                        className='rounded-lg border px-4'
+                      >
+                        <AccordionTrigger className='hover:no-underline'>
+                          <div className='flex items-start gap-3 text-left'>
+                            <HelpCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600' />
+                            <div>
+                              <div className='font-semibold'>
+                                {faq.question}
+                              </div>
+                              <Badge variant='outline' className='mt-1'>
+                                {faq.category}
+                              </Badge>
+                            </div>
                           </div>
-                          <Badge variant='outline' className='mt-1'>
-                            Account
-                          </Badge>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className='pt-2 pb-4'>
-                      <div className='text-muted-foreground pl-8'>
-                        You can open a new account through our website or mobile
-                        app. Simply navigate to the Accounts section and click
-                        "New Account". You'll need to provide some basic
-                        information and verify your identity.
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem
-                    value='security'
-                    className='rounded-lg border px-4'
-                  >
-                    <AccordionTrigger className='hover:no-underline'>
-                      <div className='flex items-start gap-3 text-left'>
-                        <HelpCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600' />
-                        <div>
-                          <div className='font-semibold'>
-                            Is my money safe with your bank?
+                        </AccordionTrigger>
+                        <AccordionContent className='pt-2 pb-4'>
+                          <div className='text-muted-foreground pl-8'>
+                            {faq.answer}
                           </div>
-                          <Badge variant='outline' className='mt-1'>
-                            Security
-                          </Badge>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className='pt-2 pb-4'>
-                      <div className='text-muted-foreground pl-8'>
-                        Yes, all deposits are insured up to $250,000 by the
-                        FDIC. We use bank-level encryption and security measures
-                        to protect your information.
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem
-                    value='transactions'
-                    className='rounded-lg border px-4'
-                  >
-                    <AccordionTrigger className='hover:no-underline'>
-                      <div className='flex items-start gap-3 text-left'>
-                        <HelpCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600' />
-                        <div>
-                          <div className='font-semibold'>
-                            How long do transfers take?
-                          </div>
-                          <Badge variant='outline' className='mt-1'>
-                            Transactions
-                          </Badge>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className='pt-2 pb-4'>
-                      <div className='text-muted-foreground pl-8'>
-                        Internal transfers are instant. External transfers
-                        typically take 1-3 business days. International
-                        transfers may take 3-5 business days.
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                ) : (
+                  <div className='text-muted-foreground text-sm'>
+                    No FAQs found for the selected filters.
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -600,9 +695,12 @@ export default function ContactPage() {
                       <div>
                         <h3 className='font-semibold'>Phone Support</h3>
                         <p className='text-muted-foreground text-sm'>
-                          Mon-Fri: 8:00 AM - 8:00 PM EST
-                          <br />
-                          Sat-Sun: 9:00 AM - 5:00 PM EST
+                          {phoneLines.map((line, index) => (
+                            <span key={`${line}-${index}`}>
+                              {line}
+                              {index < phoneLines.length - 1 ? <br /> : null}
+                            </span>
+                          ))}
                         </p>
                       </div>
                     </div>
@@ -612,7 +710,7 @@ export default function ContactPage() {
                       <div>
                         <h3 className='font-semibold'>Email Support</h3>
                         <p className='text-muted-foreground text-sm'>
-                          24/7 response within 24 hours
+                          {supportHoursData.email}
                         </p>
                       </div>
                     </div>
@@ -622,7 +720,7 @@ export default function ContactPage() {
                       <div>
                         <h3 className='font-semibold'>Live Chat</h3>
                         <p className='text-muted-foreground text-sm'>
-                          24/7 availability for all customers
+                          {supportHoursData.chat}
                         </p>
                       </div>
                     </div>
@@ -631,12 +729,9 @@ export default function ContactPage() {
                   <div className='border-t pt-4'>
                     <h4 className='mb-2 font-semibold'>Holiday Schedule</h4>
                     <div className='text-muted-foreground space-y-2 text-sm'>
-                      <div>• New Year's Day: Closed</div>
-                      <div>• Memorial Day: Limited support</div>
-                      <div>• Independence Day: Closed</div>
-                      <div>• Labor Day: Limited support</div>
-                      <div>• Thanksgiving: Closed</div>
-                      <div>• Christmas Day: Closed</div>
+                      {supportHoursData.holidays.map((holiday) => (
+                        <div key={holiday}>- {holiday}</div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -660,7 +755,13 @@ export default function ContactPage() {
                   </p>
                 </div>
               </div>
-              <Button variant='outline' className='w-full'>
+              <Button
+                variant='outline'
+                className='w-full'
+                onClick={() =>
+                  handleQuickAction('User Guides', 'Opening the latest guides.')
+                }
+              >
                 View Guides
               </Button>
             </CardContent>
@@ -679,7 +780,16 @@ export default function ContactPage() {
                   </p>
                 </div>
               </div>
-              <Button variant='outline' className='w-full'>
+              <Button
+                variant='outline'
+                className='w-full'
+                onClick={() =>
+                  handleQuickAction(
+                    'Download Forms',
+                    'Preparing forms and documents for download.'
+                  )
+                }
+              >
                 Download
               </Button>
             </CardContent>
@@ -698,7 +808,16 @@ export default function ContactPage() {
                   </p>
                 </div>
               </div>
-              <Button variant='outline' className='w-full'>
+              <Button
+                variant='outline'
+                className='w-full'
+                onClick={() =>
+                  handleQuickAction(
+                    'Community Forum',
+                    'Redirecting you to the community forum.'
+                  )
+                }
+              >
                 Visit Forum
               </Button>
             </CardContent>
@@ -717,7 +836,16 @@ export default function ContactPage() {
                   </p>
                 </div>
               </div>
-              <Button variant='outline' className='w-full'>
+              <Button
+                variant='outline'
+                className='w-full'
+                onClick={() =>
+                  handleQuickAction(
+                    'Report Issue',
+                    'We will open a secure report form for you.'
+                  )
+                }
+              >
                 Report Now
               </Button>
             </CardContent>
