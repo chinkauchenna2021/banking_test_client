@@ -280,30 +280,52 @@ export default function RegisterPage() {
         );
       }, 2000);
     } catch (error: any) {
+      const formatFieldLabel = (field: string) =>
+        field.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
       // Handle server validation errors
-      if (error.response?.data?.errors) {
+      const serverErrorList = error.response?.data?.errors;
+      if (Array.isArray(serverErrorList) && serverErrorList.length > 0) {
         const serverErrors: Record<string, string> = {};
-        error.response.data.errors.forEach((err: any) => {
-          if (err.path) {
-            serverErrors[err.path] = err.msg;
-          }
-        });
+        const formattedMessages = serverErrorList
+          .map((err: any) => {
+            if (err.path) {
+              serverErrors[err.path] = err.msg;
+            }
+            const message = err.msg || 'Invalid value';
+            return err.path
+              ? `${formatFieldLabel(err.path)}: ${message}`
+              : message;
+          })
+          .filter(Boolean);
+
         setValidationErrors(serverErrors);
 
+        const primaryMessage = formattedMessages[0];
+        const extraCount = formattedMessages.length - 1;
+        const description =
+          extraCount > 0
+            ? `${primaryMessage} (+${extraCount} more)`
+            : primaryMessage;
+
         toast({
-          title: 'Registration Failed',
-          description: 'Please fix the errors below and try again.',
+          title: 'Registration failed',
+          description,
           variant: 'destructive',
           duration: 5000
         });
-      } else {
-        toast({
-          title: 'Registration Failed',
-          description:
-            error?.message || 'Registration failed. Please try again.',
-          variant: 'destructive'
-        });
+        return;
       }
+
+      const fallbackMessage =
+        error?.response?.data?.error ||
+        error?.message ||
+        'Registration failed. Please try again.';
+      toast({
+        title: 'Registration failed',
+        description: fallbackMessage,
+        variant: 'destructive'
+      });
     }
   };
 
