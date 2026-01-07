@@ -69,11 +69,14 @@ export default function AdminPaymentSettingsPage() {
     return normalized.filter(Boolean);
   };
 
-  const validateBankAccounts = (payload: any) => {
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    !!value && typeof value === 'object' && !Array.isArray(value);
+
+  const validateBankAccounts = (payload: unknown) => {
     const errors: string[] = [];
     const normalized: Record<string, any> = {};
 
-    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    if (!isRecord(payload)) {
       return {
         errors: ['Bank accounts must be an object keyed by currency.'],
         normalized
@@ -81,19 +84,24 @@ export default function AdminPaymentSettingsPage() {
     }
 
     Object.entries(payload).forEach(([currency, entry]) => {
-      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      if (!isRecord(entry)) {
         errors.push(`Bank account for ${currency} must be an object.`);
         return;
       }
 
+      const entryRecord = entry as Record<string, unknown>;
       const account_name =
-        typeof entry.account_name === 'string' ? entry.account_name.trim() : '';
+        typeof entryRecord.account_name === 'string'
+          ? entryRecord.account_name.trim()
+          : '';
       const account_number =
-        typeof entry.account_number === 'string'
-          ? entry.account_number.trim()
+        typeof entryRecord.account_number === 'string'
+          ? entryRecord.account_number.trim()
           : '';
       const bank_name =
-        typeof entry.bank_name === 'string' ? entry.bank_name.trim() : '';
+        typeof entryRecord.bank_name === 'string'
+          ? entryRecord.bank_name.trim()
+          : '';
 
       if (!account_name)
         errors.push(`Bank account for ${currency} requires account_name.`);
@@ -107,20 +115,23 @@ export default function AdminPaymentSettingsPage() {
         account_number,
         bank_name,
         swift_code:
-          typeof entry.swift_code === 'string'
-            ? entry.swift_code.trim()
+          typeof entryRecord.swift_code === 'string'
+            ? entryRecord.swift_code.trim()
             : undefined,
-        iban: typeof entry.iban === 'string' ? entry.iban.trim() : undefined,
+        iban:
+          typeof entryRecord.iban === 'string'
+            ? entryRecord.iban.trim()
+            : undefined,
         routing_number:
-          typeof entry.routing_number === 'string'
-            ? entry.routing_number.trim()
+          typeof entryRecord.routing_number === 'string'
+            ? entryRecord.routing_number.trim()
             : undefined,
         bank_address:
-          typeof entry.bank_address === 'string'
-            ? entry.bank_address.trim()
+          typeof entryRecord.bank_address === 'string'
+            ? entryRecord.bank_address.trim()
             : undefined,
         instructions: normalizeInstructions(
-          entry.instructions,
+          entryRecord.instructions,
           errors,
           `Bank account ${currency}`
         )
@@ -130,11 +141,11 @@ export default function AdminPaymentSettingsPage() {
     return { errors, normalized };
   };
 
-  const validateCryptoWallets = (payload: any) => {
+  const validateCryptoWallets = (payload: unknown) => {
     const errors: string[] = [];
     const normalized: Record<string, any> = {};
 
-    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    if (!isRecord(payload)) {
       return {
         errors: ['Crypto wallets must be an object keyed by currency.'],
         normalized
@@ -142,17 +153,20 @@ export default function AdminPaymentSettingsPage() {
     }
 
     Object.entries(payload).forEach(([currency, entry]) => {
-      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      if (!isRecord(entry)) {
         errors.push(`Crypto wallet for ${currency} must be an object.`);
         return;
       }
 
+      const entryRecord = entry as Record<string, unknown>;
       const wallet_address =
-        typeof entry.wallet_address === 'string'
-          ? entry.wallet_address.trim()
+        typeof entryRecord.wallet_address === 'string'
+          ? entryRecord.wallet_address.trim()
           : '';
       const network =
-        typeof entry.network === 'string' ? entry.network.trim() : '';
+        typeof entryRecord.network === 'string'
+          ? entryRecord.network.trim()
+          : '';
 
       if (!wallet_address)
         errors.push(`Crypto wallet for ${currency} requires wallet_address.`);
@@ -163,7 +177,7 @@ export default function AdminPaymentSettingsPage() {
         wallet_address,
         network,
         instructions: normalizeInstructions(
-          entry.instructions,
+          entryRecord.instructions,
           errors,
           `Crypto wallet ${currency}`
         )
