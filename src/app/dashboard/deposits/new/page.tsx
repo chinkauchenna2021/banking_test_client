@@ -22,7 +22,10 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { ManualDeposit } from '@/stores/manual-deposit.store';
+import {
+  ManualDeposit,
+  CompanyAccountDetails
+} from '@/stores/manual-deposit.store';
 import { useUser } from '@/hooks/useUser';
 
 // Step 1: Amount and Method Form
@@ -157,7 +160,8 @@ export default function NewDepositPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const [data, setData] = useState({ amount: 0, method: 'bank_transfer' });
-  const [companyAccount, setCompanyAccount] = useState(null);
+  const [companyAccount, setCompanyAccount] =
+    useState<CompanyAccountDetails | null>(null);
   const [newDeposit, setNewDeposit] = useState<ManualDeposit | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
