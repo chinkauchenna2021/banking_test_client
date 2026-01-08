@@ -70,14 +70,14 @@ export interface VoiceState {
     };
   }>;
   getRequestDetails: (requestId: string) => Promise<VoiceBalanceRequest>;
-  
+
   // Information Actions
   getSupportedLanguages: () => Promise<SupportedLanguage[]>;
   getSupportedVoiceTypes: () => Promise<SupportedVoiceType[]>;
-  
+
   // Statistics and Testing
   getVoiceStatistics: () => Promise<VoiceStatistics>;
-  testVoiceCall: (phone_number: string) => Promise<any>;
+  testVoiceCall: (phone_number: string, message?: string) => Promise<any>;
 
   // UI Actions
   setCurrentRequest: (request: VoiceBalanceRequest | null) => void;
@@ -108,20 +108,23 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       }>('/voice/balance/request', data);
 
       const request = response.data;
-      
+
       // Refresh voice requests
       await get().getBalanceRequests();
-      
+
       set({
         currentRequest: request,
-        isLoading: false,
+        isLoading: false
       });
 
       return request;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to request balance',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to request balance',
+        isLoading: false
       });
       throw error;
     }
@@ -136,7 +139,8 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
     try {
       const response = await apiClient.get<{
         success: boolean;
-        requests: VoiceBalanceRequest[];
+        requests?: VoiceBalanceRequest[];
+        data?: VoiceBalanceRequest[];
         pagination: {
           page: number;
           limit: number;
@@ -145,19 +149,28 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         };
       }>('/voice/balance/requests', { params: filters });
 
+      const requests = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.requests)
+          ? response.requests
+          : [];
+
       set({
-        voiceRequests: response.requests,
-        isLoading: false,
+        voiceRequests: requests,
+        isLoading: false
       });
 
       return {
-        requests: response.requests,
-        pagination: response.pagination,
+        requests,
+        pagination: response.pagination
       };
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch balance requests',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch balance requests',
+        isLoading: false
       });
       throw error;
     }
@@ -174,14 +187,17 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       const request = response.data;
       set({
         currentRequest: request,
-        isLoading: false,
+        isLoading: false
       });
 
       return request;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch request details',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch request details',
+        isLoading: false
       });
       throw error;
     }
@@ -202,14 +218,17 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       const languages = response.data;
       set({
         supportedLanguages: languages,
-        isLoading: false,
+        isLoading: false
       });
 
       return languages;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch supported languages',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch supported languages',
+        isLoading: false
       });
       throw error;
     }
@@ -230,14 +249,17 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       const voiceTypes = response.data;
       set({
         supportedVoiceTypes: voiceTypes,
-        isLoading: false,
+        isLoading: false
       });
 
       return voiceTypes;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch supported voice types',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch supported voice types',
+        isLoading: false
       });
       throw error;
     }
@@ -254,43 +276,47 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       const statistics = response.data;
       set({
         voiceStatistics: statistics,
-        isLoading: false,
+        isLoading: false
       });
 
       return statistics;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch voice statistics',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch voice statistics',
+        isLoading: false
       });
       throw error;
     }
   },
 
-  testVoiceCall: async (phone_number: string) => {
+  testVoiceCall: async (phone_number: string, message?: string) => {
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.post<{
         success: boolean;
         data: any;
         message: string;
-      }>('/voice/balance/test', { phone_number });
+      }>('/voice/balance/test', { phone_number, message });
 
       set({ isLoading: false });
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Test call failed',
-        isLoading: false,
+        error:
+          error.response?.data?.error || error.message || 'Test call failed',
+        isLoading: false
       });
       throw error;
     }
   },
 
-  setCurrentRequest: (request: VoiceBalanceRequest | null) => 
+  setCurrentRequest: (request: VoiceBalanceRequest | null) =>
     set({ currentRequest: request }),
-  
+
   clearError: () => set({ error: null }),
-  
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+
+  setLoading: (loading: boolean) => set({ isLoading: loading })
 }));
