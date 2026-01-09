@@ -99,6 +99,7 @@ export const useUser = () => {
       business: 'Business Account',
       premium: 'Premium Account',
       savings: 'Savings Account',
+      current: 'Current Account',
       checking: 'Checking Account'
     };
 

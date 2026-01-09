@@ -88,7 +88,7 @@ export default function AccountsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [newAccountData, setNewAccountData] = useState({
     account_name: '',
-    account_type: 'checking',
+    account_type: 'current',
     currency: user?.currency || 'USD'
   });
   const [editAccountName, setEditAccountName] = useState('');
@@ -125,7 +125,7 @@ export default function AccountsPage() {
       setShowCreateDialog(false);
       setNewAccountData({
         account_name: '',
-        account_type: 'checking',
+        account_type: 'current',
         currency: user?.currency || 'USD'
       });
       await loadAccounts();
@@ -262,10 +262,15 @@ export default function AccountsPage() {
 
   const getAccountTypeIcon = (type: string) => {
     switch (type) {
+      case 'current':
+      case 'primary':
       case 'checking':
         return <Wallet className='h-5 w-5' />;
       case 'savings':
         return <Building className='h-5 w-5' />;
+      case 'corporate':
+      case 'joint':
+      case 'fixed_deposit':
       case 'credit':
         return <CreditCard className='h-5 w-5' />;
       default:
@@ -275,10 +280,15 @@ export default function AccountsPage() {
 
   const getAccountTypeColor = (type: string) => {
     switch (type) {
+      case 'current':
+      case 'primary':
       case 'checking':
         return 'bg-blue-100 text-blue-800';
       case 'savings':
         return 'bg-green-100 text-green-800';
+      case 'corporate':
+      case 'joint':
+      case 'fixed_deposit':
       case 'credit':
         return 'bg-purple-100 text-purple-800';
       default:
@@ -371,13 +381,15 @@ export default function AccountsPage() {
                         <SelectValue placeholder='Select account type' />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='checking'>
-                          Checking Account
-                        </SelectItem>
+                        <SelectItem value='primary'>Primary Account</SelectItem>
+                        <SelectItem value='current'>Current Account</SelectItem>
                         <SelectItem value='savings'>Savings Account</SelectItem>
-                        <SelectItem value='credit'>Credit Account</SelectItem>
-                        <SelectItem value='investment'>
-                          Investment Account
+                        <SelectItem value='fixed_deposit'>
+                          Fixed Deposit Account
+                        </SelectItem>
+                        <SelectItem value='joint'>Joint Account</SelectItem>
+                        <SelectItem value='corporate'>
+                          Corporate Account
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -430,9 +442,9 @@ export default function AccountsPage() {
         <Tabs defaultValue='all' className='w-full'>
           <TabsList className='mb-6'>
             <TabsTrigger value='all'>All Accounts</TabsTrigger>
-            <TabsTrigger value='checking'>Checking</TabsTrigger>
+            <TabsTrigger value='current'>Current</TabsTrigger>
             <TabsTrigger value='savings'>Savings</TabsTrigger>
-            <TabsTrigger value='credit'>Credit</TabsTrigger>
+            <TabsTrigger value='corporate'>Corporate</TabsTrigger>
           </TabsList>
 
           <TabsContent value='all' className='space-y-4'>
@@ -556,8 +568,9 @@ export default function AccountsPage() {
                                 account.account_type
                               )}
                             >
-                              {account.account_type.charAt(0).toUpperCase() +
-                                account.account_type.slice(1)}
+                              {account.account_type
+                                .replace(/_/g, ' ')
+                                .replace(/\b\w/g, (char) => char.toUpperCase())}
                             </Badge>
 
                             <Badge

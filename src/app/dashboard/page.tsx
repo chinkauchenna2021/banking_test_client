@@ -86,7 +86,7 @@ export default function DashboardPage() {
   const accountStats = {
     total: accounts.length,
     active: accounts.filter((a) => a.status === 'active').length,
-    checking: accounts.filter((a) => a.account_type === 'checking').length,
+    checking: accounts.filter((a) => a.account_type === 'current').length,
     savings: accounts.filter((a) => a.account_type === 'savings').length
   };
 
