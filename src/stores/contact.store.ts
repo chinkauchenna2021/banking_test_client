@@ -66,9 +66,14 @@ export interface ContactState {
   getResponseTime: () => Promise<ResponseTime>;
 
   // Authenticated Actions
-  getMessages: (params?: any) => Promise<{ messages: ContactMessage[]; pagination: any }>;
+  getMessages: (
+    params?: any
+  ) => Promise<{ messages: ContactMessage[]; pagination: any }>;
   getMessageDetails: (messageId: string) => Promise<ContactMessage>;
-  updateMessage: (messageId: string, updateData: any) => Promise<ContactMessage>;
+  updateMessage: (
+    messageId: string,
+    updateData: any
+  ) => Promise<ContactMessage>;
   deleteMessage: (messageId: string) => Promise<void>;
   sendTestMessage: (messageData: any) => Promise<ContactMessage>;
 
@@ -94,15 +99,18 @@ export const useContactStore = create<ContactState>((set, get) => ({
         success: boolean;
         data: ContactMessage;
         message: string;
-      }>('/contact/contact', messageData);
+      }>('/contact', messageData);
 
       const message = response.data;
       set({ isLoading: false });
       return message;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to send message',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to send message',
+        isLoading: false
       });
       throw error;
     }
@@ -111,7 +119,7 @@ export const useContactStore = create<ContactState>((set, get) => ({
   getContactCategories: async () => {
     const cacheKey = 'contact:categories';
     const cached = localStorage.getItem(cacheKey);
-    
+
     if (cached) {
       return JSON.parse(cached);
     }
@@ -126,14 +134,17 @@ export const useContactStore = create<ContactState>((set, get) => ({
       localStorage.setItem(cacheKey, JSON.stringify(response.data));
       set({
         categories: response.data,
-        isLoading: false,
+        isLoading: false
       });
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch contact categories',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch contact categories',
+        isLoading: false
       });
       throw error;
     }
@@ -142,7 +153,7 @@ export const useContactStore = create<ContactState>((set, get) => ({
   getFaqs: async () => {
     const cacheKey = 'contact:faqs';
     const cached = localStorage.getItem(cacheKey);
-    
+
     if (cached) {
       return JSON.parse(cached);
     }
@@ -157,14 +168,17 @@ export const useContactStore = create<ContactState>((set, get) => ({
       localStorage.setItem(cacheKey, JSON.stringify(response.data));
       set({
         faqs: response.data,
-        isLoading: false,
+        isLoading: false
       });
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch FAQs',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch FAQs',
+        isLoading: false
       });
       throw error;
     }
@@ -173,7 +187,7 @@ export const useContactStore = create<ContactState>((set, get) => ({
   getSupportHours: async () => {
     const cacheKey = 'contact:support-hours';
     const cached = localStorage.getItem(cacheKey);
-    
+
     if (cached) {
       return JSON.parse(cached);
     }
@@ -188,14 +202,17 @@ export const useContactStore = create<ContactState>((set, get) => ({
       localStorage.setItem(cacheKey, JSON.stringify(response.data));
       set({
         supportHours: response.data,
-        isLoading: false,
+        isLoading: false
       });
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch support hours',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch support hours',
+        isLoading: false
       });
       throw error;
     }
@@ -211,14 +228,17 @@ export const useContactStore = create<ContactState>((set, get) => ({
 
       set({
         responseTime: response.data,
-        isLoading: false,
+        isLoading: false
       });
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch response time',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch response time',
+        isLoading: false
       });
       throw error;
     }
@@ -229,20 +249,30 @@ export const useContactStore = create<ContactState>((set, get) => ({
     try {
       const response = await apiClient.get<{
         success: boolean;
-        messages: ContactMessage[];
+        messages?: ContactMessage[];
+        data?: ContactMessage[];
         pagination: any;
       }>('/contact/messages', { params });
 
+      const messages = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.messages)
+          ? response.messages
+          : [];
+
       set({
-        messages: response.messages,
-        isLoading: false,
+        messages,
+        isLoading: false
       });
 
-      return response;
+      return { messages, pagination: response.pagination };
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch messages',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch messages',
+        isLoading: false
       });
       throw error;
     }
@@ -261,14 +291,17 @@ export const useContactStore = create<ContactState>((set, get) => ({
         messages: state.messages.map((msg) =>
           msg.id === messageId ? response.data : msg
         ),
-        isLoading: false,
+        isLoading: false
       }));
 
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to fetch message details',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to fetch message details',
+        isLoading: false
       });
       throw error;
     }
@@ -288,14 +321,17 @@ export const useContactStore = create<ContactState>((set, get) => ({
         messages: state.messages.map((msg) =>
           msg.id === messageId ? updatedMessage : msg
         ),
-        isLoading: false,
+        isLoading: false
       }));
 
       return updatedMessage;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to update message',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to update message',
+        isLoading: false
       });
       throw error;
     }
@@ -308,12 +344,15 @@ export const useContactStore = create<ContactState>((set, get) => ({
 
       set((state) => ({
         messages: state.messages.filter((msg) => msg.id !== messageId),
-        isLoading: false,
+        isLoading: false
       }));
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to delete message',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to delete message',
+        isLoading: false
       });
       throw error;
     }
@@ -332,8 +371,11 @@ export const useContactStore = create<ContactState>((set, get) => ({
       return response.data;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || error.message || 'Failed to send test message',
-        isLoading: false,
+        error:
+          error.response?.data?.error ||
+          error.message ||
+          'Failed to send test message',
+        isLoading: false
       });
       throw error;
     }
@@ -341,5 +383,5 @@ export const useContactStore = create<ContactState>((set, get) => ({
 
   clearMessages: () => set({ messages: [] }),
   clearError: () => set({ error: null }),
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading: boolean) => set({ isLoading: loading })
 }));

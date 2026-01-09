@@ -42,10 +42,18 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         // Skip token for auth endpoints (except refresh token)
-        const isAuthEndpoint = config.url?.includes('/auth/');
-        const isRefreshToken = config.url?.includes('/auth/refresh-token');
+        const skipAuthHeader = [
+          '/auth/login',
+          '/auth/register',
+          '/auth/forgot-password',
+          '/auth/reset-password',
+          '/auth/verify-email',
+          '/auth/refresh-token',
+          '/auth/verify-2fa',
+          '/auth/resend-verification'
+        ].some((path) => config.url?.includes(path));
 
-        if (isAuthEndpoint && !isRefreshToken) {
+        if (skipAuthHeader) {
           return config;
         }
 
@@ -859,7 +867,7 @@ class ApiClient {
   // Support/Contact
   // =================================================================
   public submitContactForm<T = any>(data: any): Promise<T> {
-    return this.post<T>('/contact/contact', data);
+    return this.post<T>('/contact', data);
   }
 
   public getSupportTickets<T = any>(params: any = {}): Promise<T> {
