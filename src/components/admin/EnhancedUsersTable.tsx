@@ -237,16 +237,19 @@ export default function EnhancedUsersTable({
         </div>
 
         <Select
-          value={filters.status || ''}
+          value={filters.status || 'all'}
           onValueChange={(value) =>
-            setFilters({ ...filters, status: value || undefined })
+            setFilters({
+              ...filters,
+              status: value === 'all' ? undefined : value
+            })
           }
         >
           <SelectTrigger className='w-[150px]'>
             <SelectValue placeholder='Status' />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value=''>All Status</SelectItem>
+            <SelectItem value='all'>All Status</SelectItem>
             <SelectItem value='active'>Active</SelectItem>
             <SelectItem value='suspended'>Suspended</SelectItem>
             <SelectItem value='pending'>Pending</SelectItem>
@@ -254,16 +257,19 @@ export default function EnhancedUsersTable({
         </Select>
 
         <Select
-          value={filters.risk_level || ''}
+          value={filters.risk_level || 'all'}
           onValueChange={(value) =>
-            setFilters({ ...filters, risk_level: value || undefined })
+            setFilters({
+              ...filters,
+              risk_level: value === 'all' ? undefined : value
+            })
           }
         >
           <SelectTrigger className='w-[150px]'>
             <SelectValue placeholder='Risk Level' />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value=''>All Risks</SelectItem>
+            <SelectItem value='all'>All Risks</SelectItem>
             <SelectItem value='low'>Low</SelectItem>
             <SelectItem value='medium'>Medium</SelectItem>
             <SelectItem value='high'>High</SelectItem>
@@ -271,16 +277,19 @@ export default function EnhancedUsersTable({
         </Select>
 
         <Select
-          value={filters.account_type || ''}
+          value={filters.account_type || 'all'}
           onValueChange={(value) =>
-            setFilters({ ...filters, account_type: value || undefined })
+            setFilters({
+              ...filters,
+              account_type: value === 'all' ? undefined : value
+            })
           }
         >
           <SelectTrigger className='w-[150px]'>
             <SelectValue placeholder='Account Type' />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value=''>All Types</SelectItem>
+            <SelectItem value='all'>All Types</SelectItem>
             <SelectItem value='savings'>Savings</SelectItem>
             <SelectItem value='current'>Current</SelectItem>
             <SelectItem value='business'>Business</SelectItem>
