@@ -475,11 +475,9 @@ export default function EnhancedUserDetailPage() {
                     Financial Overview
                   </Label>
                   <div className='mt-2 space-y-4'>
-                    <div className='rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4'>
-                      <div className='text-muted-foreground text-sm'>
-                        Current Balance
-                      </div>
-                      <div className='text-3xl font-bold'>
+                    <div className='rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4 text-black'>
+                      <div className='text-sm text-black'>Current Balance</div>
+                      <div className='text-3xl font-bold text-black'>
                         $
                         {parseFloat(user.balance).toLocaleString(undefined, {
                           minimumFractionDigits: 2
@@ -501,15 +499,15 @@ export default function EnhancedUserDetailPage() {
                         <div className='text-muted-foreground text-sm'>
                           Total Deposits
                         </div>
-                        <div className='text-xl font-semibold'>
+                        <div className='text-xl font-semibold text-black'>
                           {user._count?.deposits || 0}
                         </div>
                       </div>
                       <div className='rounded-lg bg-slate-50 p-3 text-center'>
-                        <div className='text-muted-foreground text-sm'>
+                        <div className='text-sm text-black'>
                           Total Transactions
                         </div>
-                        <div className='text-xl font-semibold'>
+                        <div className='text-xl font-semibold text-black'>
                           {user._count?.transactions || 0}
                         </div>
                       </div>
