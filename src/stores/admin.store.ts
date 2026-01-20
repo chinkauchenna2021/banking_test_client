@@ -64,6 +64,17 @@ export interface EnhancedAdminUser extends AdminUser {
     sent_transfers: number;
     received_transfers: number;
   };
+
+  accounts?: Array<{
+    id: string;
+    account_number: string;
+    account_name?: string;
+    account_type: string;
+    currency?: string;
+    balance?: string;
+    status?: string;
+    is_default?: boolean;
+  }>;
 }
 
 export interface AdminTransaction {
@@ -325,6 +336,7 @@ export interface AdminStoreState {
   getUsers: (
     params?: any
   ) => Promise<{ users: AdminUser[]; pagination: Pagination }>;
+  createAdminUser: (data: any) => Promise<any>;
   getEnhancedUsers: (
     params?: any
   ) => Promise<{ users: EnhancedAdminUser[]; pagination: Pagination }>;
@@ -343,6 +355,7 @@ export interface AdminStoreState {
     reason: string,
     type: 'add' | 'deduct' | 'set'
   ) => Promise<any>;
+  createAdminUserAccount: (userId: string, data: any) => Promise<any>;
   bulkUpdateUserStatus: (
     userIds: string[],
     status: string,
@@ -402,6 +415,7 @@ export interface AdminStoreState {
   getTransactions: (
     params?: any
   ) => Promise<{ transactions: AdminTransaction[]; pagination: Pagination }>;
+  createAdminTransfer: (data: any) => Promise<any>;
 
   // Activity Monitoring Actions
   getUserActivities: (params?: any) => Promise<UserActivity[]>;
@@ -497,6 +511,20 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error || error.message || 'Failed to fetch users';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  createAdminUser: async (data: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.createAdminUser(data);
+      set({ isLoading: false });
+      return response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error || error.message || 'Failed to create user';
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
@@ -684,6 +712,22 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
         error.response?.data?.error ||
         error.message ||
         'Failed to update user balance';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  createAdminUserAccount: async (userId: string, data: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.createAdminUserAccount(userId, data);
+      set({ isLoading: false });
+      return response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to create account';
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
@@ -1130,6 +1174,22 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
         error.response?.data?.error ||
         error.message ||
         'Failed to fetch transactions';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  createAdminTransfer: async (data: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.createAdminTransfer(data);
+      set({ isLoading: false });
+      return response.data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to create transfer';
       set({ error: errorMessage, isLoading: false });
       throw error;
     }

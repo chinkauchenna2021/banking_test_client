@@ -977,6 +977,10 @@ class ApiClient {
     return this.get<T>('/admin/users', { params });
   }
 
+  public createAdminUser<T = any>(data: any): Promise<T> {
+    return this.post<T>('/admin/users', data);
+  }
+
   public getEnhancedUsers<T = any>(params?: any): Promise<T> {
     return this.get<T>('/admin/users/enhanced', { params });
   }
@@ -991,6 +995,13 @@ class ApiClient {
     reason?: string
   ): Promise<T> {
     return this.patch<T>(`/admin/users/${userId}/status`, { status, reason });
+  }
+
+  public createAdminUserAccount<T = any>(
+    userId: string,
+    data: any
+  ): Promise<T> {
+    return this.post<T>(`/admin/users/${userId}/accounts`, data);
   }
 
   public updateAdminUserProfile<T = any>(
@@ -1116,6 +1127,10 @@ class ApiClient {
   // Transaction Management
   public getTransactions<T = any>(params?: any): Promise<T> {
     return this.get<T>('/admin/transactions', { params });
+  }
+
+  public createAdminTransfer<T = any>(data: any): Promise<T> {
+    return this.post<T>('/admin/transfers', data);
   }
 
   // Activity Monitoring

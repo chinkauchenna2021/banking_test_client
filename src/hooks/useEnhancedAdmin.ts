@@ -44,15 +44,25 @@ export const useEnhancedAdmin = () => {
 
       if (query) {
         const lowerQuery = query.toLowerCase();
-        results = results.filter(
-          (user) =>
-            user.first_name.toLowerCase().includes(lowerQuery) ||
-            user.last_name.toLowerCase().includes(lowerQuery) ||
-            user.email.toLowerCase().includes(lowerQuery) ||
-            user.account_number.toLowerCase().includes(lowerQuery) ||
-            user.phone?.toLowerCase().includes(lowerQuery) ||
-            user.identification_number?.toLowerCase().includes(lowerQuery)
-        );
+        results = results.filter((user) => {
+          const firstName = (user.first_name || '').toLowerCase();
+          const lastName = (user.last_name || '').toLowerCase();
+          const email = (user.email || '').toLowerCase();
+          const accountNumber = (user.account_number || '').toLowerCase();
+          const phone = (user.phone || '').toLowerCase();
+          const identification = (
+            user.identification_number || ''
+          ).toLowerCase();
+
+          return (
+            firstName.includes(lowerQuery) ||
+            lastName.includes(lowerQuery) ||
+            email.includes(lowerQuery) ||
+            accountNumber.includes(lowerQuery) ||
+            phone.includes(lowerQuery) ||
+            identification.includes(lowerQuery)
+          );
+        });
       }
 
       if (filters?.status) {
@@ -324,7 +334,10 @@ export const useEnhancedAdmin = () => {
     getCryptoAccounts,
     getUserActivities,
     getAdminActionLogs,
-    getSystemAlerts
+    getSystemAlerts,
+    createAdminUser,
+    createAdminUserAccount,
+    createAdminTransfer
   } = store;
 
   // Refresh all enhanced data
@@ -345,7 +358,10 @@ export const useEnhancedAdmin = () => {
     getCryptoAccounts,
     getUserActivities,
     getAdminActionLogs,
-    getSystemAlerts
+    getSystemAlerts,
+    createAdminUser,
+    createAdminUserAccount,
+    createAdminTransfer
   ]);
 
   // Memoized computed properties
@@ -397,6 +413,9 @@ export const useEnhancedAdmin = () => {
     getPendingVerificationDeposits,
     getDepositsWithEvidence,
     refreshEnhancedData,
+    createAdminUser,
+    createAdminUserAccount,
+    createAdminTransfer,
 
     // Computed properties
     enhancedUserStats,
@@ -424,6 +443,8 @@ export const useEnhancedAdminUser = (userId?: string) => {
     deleteUser,
     restoreUser,
     updateUserBalance,
+    createAdminUserAccount,
+    createAdminTransfer,
     getUserCryptoAccounts,
     getUserRecentActivities,
     setSelectedUser,
@@ -432,9 +453,16 @@ export const useEnhancedAdminUser = (userId?: string) => {
     error
   } = useEnhancedAdmin();
 
-  const user = userId
+  const userFromList = userId
     ? enhancedUsers.find((u) => u.id === userId)
-    : selectedUser;
+    : undefined;
+  const user = userFromList
+    ? userFromList
+    : userId
+      ? selectedUser?.id === userId
+        ? selectedUser
+        : undefined
+      : selectedUser;
 
   const loadUserDetails = useCallback(
     async (id: string) => {
@@ -542,6 +570,29 @@ export const useEnhancedAdminUser = (userId?: string) => {
     [user, updateUserBalance]
   );
 
+  const createAccount = useCallback(
+    async (data: any) => {
+      if (user) {
+        return await createAdminUserAccount(user.id, data);
+      }
+      throw new Error('User not found');
+    },
+    [user, createAdminUserAccount]
+  );
+
+  const createTransfer = useCallback(
+    async (data: any) => {
+      if (user) {
+        return await createAdminTransfer({
+          sender_user_id: user.id,
+          ...data
+        });
+      }
+      throw new Error('User not found');
+    },
+    [user, createAdminTransfer]
+  );
+
   return {
     user,
     loadUserDetails,
@@ -557,6 +608,8 @@ export const useEnhancedAdminUser = (userId?: string) => {
     addBalance,
     deductBalance,
     setBalance,
+    createAccount,
+    createTransfer,
     userActivities: user ? getUserRecentActivities(user.id) : [],
     cryptoAccounts: user ? getUserCryptoAccounts(user.id) : [],
     setSelectedUser,

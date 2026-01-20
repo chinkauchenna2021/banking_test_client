@@ -85,17 +85,32 @@ export default function EnhancedUserDetailPage() {
     addBalance,
     deductBalance,
     setBalance,
+    createAccount,
+    createTransfer,
     isLoading,
     error
   } = useEnhancedAdminUser(userId);
 
   const [showBalanceDialog, setShowBalanceDialog] = useState(false);
+  const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showTagDialog, setShowTagDialog] = useState(false);
   const [showRiskDialog, setShowRiskDialog] = useState(false);
   const [balanceData, setBalanceData] = useState({
     type: 'add',
     amount: '',
     reason: ''
+  });
+  const [accountData, setAccountData] = useState({
+    account_name: '',
+    account_type: 'primary',
+    currency: 'USD'
+  });
+  const [transferData, setTransferData] = useState({
+    sender_account_id: '',
+    receiver_account_number: '',
+    amount: '',
+    description: ''
   });
   const [tagData, setTagData] = useState('');
   const [riskData, setRiskData] = useState('');
@@ -170,6 +185,72 @@ export default function EnhancedUserDetailPage() {
     }
   };
 
+  const handleCreateAccount = async () => {
+    if (
+      !accountData.account_name ||
+      !accountData.account_type ||
+      !accountData.currency
+    ) {
+      toast.error('Account name, type, and currency are required');
+      return;
+    }
+
+    try {
+      await createAccount({
+        account_name: accountData.account_name,
+        account_type: accountData.account_type,
+        currency: accountData.currency
+      });
+      toast.success('Account created successfully');
+      setShowAccountDialog(false);
+      setAccountData({
+        account_name: '',
+        account_type: 'primary',
+        currency: 'USD'
+      });
+      await loadUserDetails(userId);
+    } catch (error: any) {
+      toast.error(`Failed to create account: ${error.message}`);
+    }
+  };
+
+  const handleTransfer = async () => {
+    if (
+      !transferData.sender_account_id ||
+      !transferData.receiver_account_number ||
+      !transferData.amount
+    ) {
+      toast.error('Sender account, receiver account, and amount are required');
+      return;
+    }
+
+    const amount = parseFloat(transferData.amount);
+    if (Number.isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      await createTransfer({
+        sender_account_id: transferData.sender_account_id,
+        receiver_account_number: transferData.receiver_account_number,
+        amount,
+        description: transferData.description
+      });
+      toast.success('Transfer initiated successfully');
+      setShowTransferDialog(false);
+      setTransferData({
+        sender_account_id: '',
+        receiver_account_number: '',
+        amount: '',
+        description: ''
+      });
+      await loadUserDetails(userId);
+    } catch (error: any) {
+      toast.error(`Failed to create transfer: ${error.message}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <PageContainer scrollable pageTitle='Loading User...' pageDescription=''>
@@ -220,6 +301,18 @@ export default function EnhancedUserDetailPage() {
             Back to Users
           </Button>
           <div className='flex gap-2'>
+            <Button
+              variant='outline'
+              onClick={() => setShowAccountDialog(true)}
+            >
+              Create Account
+            </Button>
+            <Button
+              variant='outline'
+              onClick={() => setShowTransferDialog(true)}
+            >
+              Send Transfer
+            </Button>
             <Button variant='outline' onClick={() => setShowRiskDialog(true)}>
               <Shield className='mr-2 h-4 w-4' />
               Risk Level
@@ -620,6 +713,151 @@ export default function EnhancedUserDetailPage() {
               <Save className='mr-2 h-4 w-4' />
               Confirm Adjustment
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Account Dialog */}
+      <Dialog open={showAccountDialog} onOpenChange={setShowAccountDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Account</DialogTitle>
+            <DialogDescription>
+              Create a new account for this user
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            <div>
+              <Label>Account Name</Label>
+              <Input
+                value={accountData.account_name}
+                onChange={(e) =>
+                  setAccountData({
+                    ...accountData,
+                    account_name: e.target.value
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Account Type</Label>
+              <Select
+                value={accountData.account_type}
+                onValueChange={(value) =>
+                  setAccountData({ ...accountData, account_type: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='primary'>Primary</SelectItem>
+                  <SelectItem value='savings'>Savings</SelectItem>
+                  <SelectItem value='current'>Current</SelectItem>
+                  <SelectItem value='fixed_deposit'>Fixed Deposit</SelectItem>
+                  <SelectItem value='joint'>Joint</SelectItem>
+                  <SelectItem value='corporate'>Corporate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Currency</Label>
+              <Input
+                value={accountData.currency}
+                onChange={(e) =>
+                  setAccountData({
+                    ...accountData,
+                    currency: e.target.value.toUpperCase()
+                  })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setShowAccountDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateAccount}>Create Account</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Transfer Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Transfer</DialogTitle>
+            <DialogDescription>
+              Initiate a transfer on behalf of this user
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            <div>
+              <Label>Sender Account</Label>
+              <Select
+                value={transferData.sender_account_id}
+                onValueChange={(value) =>
+                  setTransferData({ ...transferData, sender_account_id: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select account' />
+                </SelectTrigger>
+                <SelectContent>
+                  {user.accounts?.map((account) => (
+                    <SelectItem key={account.id} value={account.id.toString()}>
+                      {account.account_number} • {account.account_type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Receiver Account Number</Label>
+              <Input
+                value={transferData.receiver_account_number}
+                onChange={(e) =>
+                  setTransferData({
+                    ...transferData,
+                    receiver_account_number: e.target.value
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Amount</Label>
+              <Input
+                type='number'
+                value={transferData.amount}
+                onChange={(e) =>
+                  setTransferData({ ...transferData, amount: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={transferData.description}
+                onChange={(e) =>
+                  setTransferData({
+                    ...transferData,
+                    description: e.target.value
+                  })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setShowTransferDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleTransfer}>Send Transfer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

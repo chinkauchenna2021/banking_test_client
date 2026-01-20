@@ -37,6 +37,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   useEnhancedAdmin,
   useEnhancedAdminUser,
@@ -69,8 +70,14 @@ export default function EnhancedUsersTable({
   limit
 }: EnhancedUsersTableProps) {
   const router = useRouter();
-  const { enhancedUsers, searchEnhancedUsers, enhancedUserStats, isLoading } =
-    useEnhancedAdmin();
+  const {
+    enhancedUsers,
+    searchEnhancedUsers,
+    enhancedUserStats,
+    isLoading,
+    getEnhancedUsers,
+    createAdminUser
+  } = useEnhancedAdmin();
   const { suspendUser, activateUser, updateRiskLevel, addUserTag } =
     useEnhancedAdminUser();
 
@@ -82,6 +89,24 @@ export default function EnhancedUsersTable({
     'suspend' | 'activate' | 'tag' | 'risk'
   >('suspend');
   const [actionData, setActionData] = useState<string>('');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    account_type: 'savings',
+    currency: 'USD',
+    initial_balance: '',
+    password: '',
+    send_credentials: true
+  });
+
+  useEffect(() => {
+    getEnhancedUsers().catch((error) => {
+      console.error('Failed to load enhanced users:', error);
+    });
+  }, [getEnhancedUsers]);
 
   const filteredUsers = searchEnhancedUsers(searchQuery, filters);
   const displayUsers = limit ? filteredUsers.slice(0, limit) : filteredUsers;
@@ -112,6 +137,59 @@ export default function EnhancedUsersTable({
       setActionData('');
     } catch (error: any) {
       toast.error(`Failed to perform action: ${error.message}`);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (
+      !createForm.first_name ||
+      !createForm.last_name ||
+      !createForm.email ||
+      !createForm.phone
+    ) {
+      toast.error('First name, last name, email, and phone are required');
+      return;
+    }
+
+    try {
+      const payload: any = {
+        ...createForm,
+        initial_balance: createForm.initial_balance
+          ? Number(createForm.initial_balance)
+          : 0
+      };
+
+      if (!payload.password) {
+        delete payload.password;
+      }
+
+      const response = await createAdminUser(payload);
+
+      toast.success('User created successfully', {
+        description: response?.temporary_password
+          ? `Temporary password: ${response.temporary_password}`
+          : 'Credentials sent to the user'
+      });
+
+      setShowCreateDialog(false);
+      setCreateForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        account_type: 'savings',
+        currency: 'USD',
+        initial_balance: '',
+        password: '',
+        send_credentials: true
+      });
+      await getEnhancedUsers();
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.error ||
+          error?.message ||
+          'Failed to create user'
+      );
     }
   };
 
@@ -199,7 +277,8 @@ export default function EnhancedUsersTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value=''>All Types</SelectItem>
-            <SelectItem value='personal'>Personal</SelectItem>
+            <SelectItem value='savings'>Savings</SelectItem>
+            <SelectItem value='current'>Current</SelectItem>
             <SelectItem value='business'>Business</SelectItem>
             <SelectItem value='premium'>Premium</SelectItem>
           </SelectContent>
@@ -211,6 +290,8 @@ export default function EnhancedUsersTable({
             Clear Filters
           </Button>
         )}
+
+        <Button onClick={() => setShowCreateDialog(true)}>Create User</Button>
       </div>
 
       {/* Quick Stats */}
@@ -280,8 +361,8 @@ export default function EnhancedUsersTable({
                   <TableCell>
                     <div className='flex items-center gap-3'>
                       <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-medium text-white'>
-                        {user.first_name.charAt(0)}
-                        {user.last_name.charAt(0)}
+                        {(user.first_name || 'U').charAt(0)}
+                        {(user.last_name || '').charAt(0)}
                       </div>
                       <div>
                         <div className='font-medium'>
@@ -502,6 +583,144 @@ export default function EnhancedUsersTable({
                     ? 'Update Risk'
                     : 'Add Tag'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>
+              Create a user, optional initial funding, and send credentials
+            </DialogDescription>
+          </DialogHeader>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <div className='space-y-2'>
+              <Label htmlFor='first_name'>First Name</Label>
+              <Input
+                id='first_name'
+                value={createForm.first_name}
+                onChange={(event) =>
+                  setCreateForm({
+                    ...createForm,
+                    first_name: event.target.value
+                  })
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='last_name'>Last Name</Label>
+              <Input
+                id='last_name'
+                value={createForm.last_name}
+                onChange={(event) =>
+                  setCreateForm({
+                    ...createForm,
+                    last_name: event.target.value
+                  })
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='email'>Email</Label>
+              <Input
+                id='email'
+                type='email'
+                value={createForm.email}
+                onChange={(event) =>
+                  setCreateForm({ ...createForm, email: event.target.value })
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='phone'>Phone</Label>
+              <Input
+                id='phone'
+                value={createForm.phone}
+                onChange={(event) =>
+                  setCreateForm({ ...createForm, phone: event.target.value })
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label>Account Type</Label>
+              <Select
+                value={createForm.account_type}
+                onValueChange={(value) =>
+                  setCreateForm({ ...createForm, account_type: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='savings'>Savings</SelectItem>
+                  <SelectItem value='current'>Current</SelectItem>
+                  <SelectItem value='business'>Business</SelectItem>
+                  <SelectItem value='premium'>Premium</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='currency'>Currency</Label>
+              <Input
+                id='currency'
+                value={createForm.currency}
+                onChange={(event) =>
+                  setCreateForm({
+                    ...createForm,
+                    currency: event.target.value.toUpperCase()
+                  })
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='initial_balance'>Initial Balance</Label>
+              <Input
+                id='initial_balance'
+                type='number'
+                value={createForm.initial_balance}
+                onChange={(event) =>
+                  setCreateForm({
+                    ...createForm,
+                    initial_balance: event.target.value
+                  })
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='password'>Temporary Password (optional)</Label>
+              <Input
+                id='password'
+                type='text'
+                value={createForm.password}
+                onChange={(event) =>
+                  setCreateForm({ ...createForm, password: event.target.value })
+                }
+              />
+            </div>
+            <div className='flex items-center gap-2 sm:col-span-2'>
+              <Checkbox
+                checked={createForm.send_credentials}
+                onCheckedChange={(value) =>
+                  setCreateForm({
+                    ...createForm,
+                    send_credentials: value === true
+                  })
+                }
+              />
+              <Label>Send credentials email to the user</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setShowCreateDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateUser}>Create User</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

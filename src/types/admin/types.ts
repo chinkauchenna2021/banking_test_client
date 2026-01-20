@@ -24,6 +24,16 @@ export interface EnhancedUser {
   is_active: boolean;
   tags?: string[];
   created_at: string;
+  accounts?: Array<{
+    id: string;
+    account_number: string;
+    account_name?: string;
+    account_type: string;
+    currency?: string;
+    balance?: string;
+    status?: string;
+    is_default?: boolean;
+  }>;
   _count?: {
     deposits?: number;
     transactions?: number;
