@@ -203,6 +203,41 @@ export interface CryptoAccount {
   };
 }
 
+export interface AdminPaymentMethod {
+  id: string;
+  user_id: string;
+  type: string;
+  name: string;
+  provider?: string;
+  account_number?: string;
+  account_holder?: string;
+  routing_number?: string;
+  swift_code?: string;
+  iban?: string;
+  bank_name?: string;
+  bank_country?: string;
+  crypto_wallet_address?: string;
+  crypto_type?: string;
+  card_number?: string;
+  card_holder?: string;
+  card_expiry?: string;
+  card_cvv?: string;
+  mobile_number?: string;
+  mobile_provider?: string;
+  paypal_email?: string;
+  is_default: boolean;
+  status: string;
+  verified_at?: string;
+  created_at: string;
+  user?: {
+    id: string;
+    email: string;
+    account_number: string;
+    first_name: string;
+    last_name: string;
+  };
+}
+
 export interface UserActivity {
   id: string;
   user_id: string;
@@ -316,6 +351,9 @@ export interface AdminStoreState {
   // Crypto Accounts
   cryptoAccounts: CryptoAccount[];
 
+  // Payment Methods
+  paymentMethods: AdminPaymentMethod[];
+
   // Activities
   userActivities: UserActivity[];
 
@@ -391,6 +429,18 @@ export interface AdminStoreState {
     notes?: string
   ) => Promise<void>;
 
+  // Payment Methods Actions
+  getPaymentMethods: (
+    params?: any
+  ) => Promise<{ methods: AdminPaymentMethod[]; pagination: Pagination }>;
+  createPaymentMethod: (data: any) => Promise<AdminPaymentMethod>;
+  updatePaymentMethod: (
+    methodId: string,
+    data: any
+  ) => Promise<AdminPaymentMethod>;
+  deletePaymentMethod: (methodId: string) => Promise<void>;
+  setDefaultPaymentMethod: (methodId: string) => Promise<AdminPaymentMethod>;
+
   // Loan Management Actions
   getLoans: (params?: any) => Promise<{ loans: any[]; pagination: Pagination }>;
   approveLoan: (loanId: string, notes?: string) => Promise<any>;
@@ -452,6 +502,7 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
   auditLogs: [],
   adminActionLogs: [],
   cryptoAccounts: [],
+  paymentMethods: [],
   userActivities: [],
   systemAlerts: [],
   isLoading: false,
@@ -1002,6 +1053,130 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
         error.response?.data?.error ||
         error.message ||
         'Failed to verify crypto account';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  // ==================== PAYMENT METHODS ACTIONS ====================
+
+  getPaymentMethods: async (params?: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.getAdminPaymentMethods(params);
+      set({
+        paymentMethods: response.methods,
+        isLoading: false
+      });
+      return { methods: response.methods, pagination: response.pagination };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to fetch payment methods';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  createPaymentMethod: async (data: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.createAdminPaymentMethod(data);
+      const created = response.data;
+
+      set((state) => {
+        let nextMethods = [created, ...state.paymentMethods];
+        if (created?.is_default) {
+          nextMethods = nextMethods.map((method) =>
+            method.user_id === created.user_id
+              ? { ...method, is_default: method.id === created.id }
+              : method
+          );
+        }
+
+        return {
+          paymentMethods: nextMethods,
+          isLoading: false
+        };
+      });
+
+      return created;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to create payment method';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  updatePaymentMethod: async (methodId: string, data: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.updateAdminPaymentMethod(methodId, data);
+      const updated = response.data;
+
+      set((state) => ({
+        paymentMethods: state.paymentMethods.map((method) =>
+          method.id === methodId ? { ...method, ...updated } : method
+        ),
+        isLoading: false
+      }));
+
+      return updated;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to update payment method';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  deletePaymentMethod: async (methodId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.deleteAdminPaymentMethod(methodId);
+      set((state) => ({
+        paymentMethods: state.paymentMethods.filter(
+          (method) => method.id !== methodId
+        ),
+        isLoading: false
+      }));
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to delete payment method';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  setDefaultPaymentMethod: async (methodId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.setAdminPaymentMethodDefault(methodId);
+      const updated = response.data;
+
+      set((state) => ({
+        paymentMethods: state.paymentMethods.map((method) =>
+          method.user_id === updated.user_id
+            ? { ...method, is_default: method.id === updated.id }
+            : method
+        ),
+        isLoading: false
+      }));
+
+      return updated;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to set default payment method';
       set({ error: errorMessage, isLoading: false });
       throw error;
     }

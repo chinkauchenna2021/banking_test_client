@@ -332,12 +332,17 @@ export const useEnhancedAdmin = () => {
     getEnhancedUsers,
     getEnhancedDeposits,
     getCryptoAccounts,
+    getPaymentMethods,
     getUserActivities,
     getAdminActionLogs,
     getSystemAlerts,
     createAdminUser,
     createAdminUserAccount,
-    createAdminTransfer
+    createAdminTransfer,
+    createPaymentMethod,
+    updatePaymentMethod,
+    deletePaymentMethod,
+    setDefaultPaymentMethod
   } = store;
 
   // Refresh all enhanced data
@@ -356,12 +361,17 @@ export const useEnhancedAdmin = () => {
     getEnhancedUsers,
     getEnhancedDeposits,
     getCryptoAccounts,
+    getPaymentMethods,
     getUserActivities,
     getAdminActionLogs,
     getSystemAlerts,
     createAdminUser,
     createAdminUserAccount,
-    createAdminTransfer
+    createAdminTransfer,
+    createPaymentMethod,
+    updatePaymentMethod,
+    deletePaymentMethod,
+    setDefaultPaymentMethod
   ]);
 
   // Memoized computed properties
@@ -416,6 +426,11 @@ export const useEnhancedAdmin = () => {
     createAdminUser,
     createAdminUserAccount,
     createAdminTransfer,
+    getPaymentMethods,
+    createPaymentMethod,
+    updatePaymentMethod,
+    deletePaymentMethod,
+    setDefaultPaymentMethod,
 
     // Computed properties
     enhancedUserStats,

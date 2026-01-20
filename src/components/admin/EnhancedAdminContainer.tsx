@@ -20,8 +20,15 @@ export default function EnhancedAdminContainer({
     error,
     criticalAlerts,
     depositsRequiringVerification,
+    enhancedDashboardStats,
+    enhancedUsers,
+    enhancedDeposits,
     refreshEnhancedData
   } = useEnhancedAdmin();
+  const hasBootstrappedData =
+    !!enhancedDashboardStats ||
+    enhancedUsers.length > 0 ||
+    enhancedDeposits.length > 0;
 
   useEffect(() => {
     if (criticalAlerts.length > 0) {
@@ -34,7 +41,7 @@ export default function EnhancedAdminContainer({
     }
   }, [criticalAlerts]);
 
-  if (isLoading && showLoading) {
+  if (isLoading && showLoading && !hasBootstrappedData) {
     return (
       <div className='flex h-64 items-center justify-center'>
         <div className='space-y-4 text-center'>
@@ -48,6 +55,8 @@ export default function EnhancedAdminContainer({
   }
 
   if (error) {
+    const errorMessage =
+      typeof error === 'string' ? error : (error as any).message;
     return (
       <div className='flex h-64 items-center justify-center'>
         <div className='max-w-md space-y-4 text-center'>
@@ -56,9 +65,7 @@ export default function EnhancedAdminContainer({
             <h3 className='mb-2 text-lg font-semibold'>
               Failed to load admin data
             </h3>
-            <p className='text-muted-foreground mb-4'>
-              {(error as any).message}
-            </p>
+            <p className='text-muted-foreground mb-4'>{errorMessage}</p>
             <Button onClick={refreshEnhancedData} variant='outline'>
               Retry
             </Button>

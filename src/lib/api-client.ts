@@ -1133,6 +1133,30 @@ class ApiClient {
     return this.post<T>('/admin/transfers', data);
   }
 
+  // Payment Methods (Admin)
+  public getAdminPaymentMethods<T = any>(params?: any): Promise<T> {
+    return this.get<T>('/admin/payment-methods', { params });
+  }
+
+  public createAdminPaymentMethod<T = any>(data: any): Promise<T> {
+    return this.post<T>('/admin/payment-methods', data);
+  }
+
+  public updateAdminPaymentMethod<T = any>(
+    methodId: string,
+    data: any
+  ): Promise<T> {
+    return this.put<T>(`/admin/payment-methods/${methodId}`, data);
+  }
+
+  public deleteAdminPaymentMethod<T = any>(methodId: string): Promise<T> {
+    return this.delete<T>(`/admin/payment-methods/${methodId}`);
+  }
+
+  public setAdminPaymentMethodDefault<T = any>(methodId: string): Promise<T> {
+    return this.post<T>(`/admin/payment-methods/${methodId}/default`);
+  }
+
   // Activity Monitoring
   public getUserActivities<T = any>(params?: {
     user_id?: string;

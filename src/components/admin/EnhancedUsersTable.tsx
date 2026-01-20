@@ -103,10 +103,14 @@ export default function EnhancedUsersTable({
   });
 
   useEffect(() => {
+    if (enhancedUsers.length > 0) {
+      return;
+    }
+
     getEnhancedUsers().catch((error) => {
       console.error('Failed to load enhanced users:', error);
     });
-  }, [getEnhancedUsers]);
+  }, [enhancedUsers.length, getEnhancedUsers]);
 
   const filteredUsers = searchEnhancedUsers(searchQuery, filters);
   const displayUsers = limit ? filteredUsers.slice(0, limit) : filteredUsers;
