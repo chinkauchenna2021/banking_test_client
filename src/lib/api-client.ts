@@ -354,8 +354,14 @@ class ApiClient {
       const response = await this.post('/auth/login', { email, password });
 
       // Handle 2FA response
-      if (response.requires_two_factor) {
-        return response;
+      const requiresTwoFactor =
+        response?.requires_two_factor || response?.data?.requires_two_factor;
+      if (requiresTwoFactor) {
+        return {
+          ...response,
+          requires_two_factor: true,
+          temp_token: response?.temp_token || response?.data?.temp_token
+        };
       }
 
       // Tokens will be automatically updated by the interceptor

@@ -257,7 +257,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           description: 'Two-factor authentication successful'
         });
 
-        router.replace('/dashboard');
+        const currentUser = useAuthStore.getState().user;
+        router.replace(currentUser?.is_admin ? '/admin' : '/dashboard');
       } catch (error: any) {
         const errorMessage =
           error.response?.data?.error ||

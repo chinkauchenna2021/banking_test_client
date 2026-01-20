@@ -317,18 +317,36 @@ export const useEnhancedAdmin = () => {
     return store.enhancedDeposits.filter((deposit) => deposit.proof_of_payment);
   }, [store.enhancedDeposits]);
 
+  const {
+    getEnhancedDashboardStats,
+    getEnhancedUsers,
+    getEnhancedDeposits,
+    getCryptoAccounts,
+    getUserActivities,
+    getAdminActionLogs,
+    getSystemAlerts
+  } = store;
+
   // Refresh all enhanced data
   const refreshEnhancedData = useCallback(async () => {
     await Promise.all([
-      store.getEnhancedDashboardStats(),
-      store.getEnhancedUsers(),
-      store.getEnhancedDeposits(),
-      store.getCryptoAccounts(),
-      store.getUserActivities(),
-      store.getAdminActionLogs(),
-      store.getSystemAlerts()
+      getEnhancedDashboardStats(),
+      getEnhancedUsers(),
+      getEnhancedDeposits(),
+      getCryptoAccounts(),
+      getUserActivities(),
+      getAdminActionLogs(),
+      getSystemAlerts()
     ]);
-  }, [store]);
+  }, [
+    getEnhancedDashboardStats,
+    getEnhancedUsers,
+    getEnhancedDeposits,
+    getCryptoAccounts,
+    getUserActivities,
+    getAdminActionLogs,
+    getSystemAlerts
+  ]);
 
   // Memoized computed properties
   const enhancedUserStats = useMemo(

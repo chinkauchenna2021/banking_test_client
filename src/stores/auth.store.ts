@@ -74,9 +74,20 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await apiClient.login(email, password);
 
-          if (response.requires_two_factor) {
+          const requiresTwoFactor =
+            response?.requires_two_factor ||
+            response?.data?.requires_two_factor;
+          if (requiresTwoFactor) {
+            const tempToken =
+              response?.temp_token || response?.data?.temp_token;
+            if (!tempToken) {
+              throw new Error('Two-factor token missing');
+            }
             set({ isLoading: false, error: null });
-            return response;
+            return {
+              requires_two_factor: true,
+              temp_token: tempToken
+            };
           }
 
           // Extract tokens and user from response

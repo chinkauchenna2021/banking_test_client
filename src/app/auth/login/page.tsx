@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormContainer } from '@/components/auth/FormContainer';
+import TwoFactorModal from '@/components/auth/TwoFactorModal';
+import { useAuthStore } from '@/stores/auth.store';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,6 +28,8 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [twoFactorOpen, setTwoFactorOpen] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +65,26 @@ export default function LoginPage() {
 
     try {
       const response = await login(loginData.email, loginData.password);
+      const requiresTwoFactor =
+        response?.requires_two_factor || response?.data?.requires_two_factor;
+
+      if (requiresTwoFactor) {
+        const tempToken =
+          response?.temp_token || response?.data?.temp_token || '';
+        if (!tempToken) {
+          throw new Error('Two-factor token missing');
+        }
+        setTwoFactorToken(tempToken);
+        setTwoFactorOpen(true);
+        setLoginSuccess(false);
+        toast({
+          title: 'Verification Required',
+          description: 'Enter the 2FA code from your authenticator app.',
+          duration: 5000
+        });
+        return;
+      }
+
       setLoginSuccess(true);
 
       toast({
@@ -68,6 +92,9 @@ export default function LoginPage() {
         description: 'Welcome back! Redirecting to your dashboard...',
         duration: 5000
       });
+
+      const user = response?.data?.user || response?.user;
+      router.replace(user?.is_admin ? '/admin' : '/dashboard');
 
       // Show toast for remember me choice
       if (loginData.rememberMe) {
@@ -328,6 +355,20 @@ export default function LoginPage() {
           </Button>
         </form>
       </div>
+      <TwoFactorModal
+        open={twoFactorOpen}
+        onOpenChange={(open) => {
+          setTwoFactorOpen(open);
+          if (!open) {
+            setTwoFactorToken('');
+          }
+        }}
+        tempToken={twoFactorToken}
+        onSuccess={() => {
+          const currentUser = useAuthStore.getState().user;
+          router.replace(currentUser?.is_admin ? '/admin' : '/dashboard');
+        }}
+      />
     </FormContainer>
   );
 }
