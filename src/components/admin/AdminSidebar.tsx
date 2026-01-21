@@ -19,7 +19,8 @@ import {
   BarChart3,
   AlertTriangle,
   Coins,
-  Activity
+  Activity,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -48,6 +49,11 @@ const navigation = [
     name: 'Transactions',
     href: '/admin/transactions',
     icon: ArrowUpDown
+  },
+  {
+    name: 'Approvals',
+    href: '/admin/approvals',
+    icon: CheckCircle2
   },
   {
     name: 'Deposits',

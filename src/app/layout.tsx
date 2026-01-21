@@ -37,6 +37,9 @@ export default async function RootLayout({
 
   return (
     <html lang='en' suppressHydrationWarning>
+      <head>
+        <script src='//code.jivosite.com/widget/qqgMvccURQ' async></script>
+      </head>
       <body className={`${fontVariables}`}>
         <NextTopLoader color='var(--primary)' showSpinner={false} />
         <NuqsAdapter>
