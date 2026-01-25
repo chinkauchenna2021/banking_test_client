@@ -556,9 +556,15 @@ export const useEnhancedAdminUser = (userId?: string) => {
   );
 
   const addBalance = useCallback(
-    async (amount: number, reason: string) => {
+    async (amount: number, reason: string, transactionAt?: string) => {
       if (user) {
-        return await updateUserBalance(user.id, amount, reason, 'add');
+        return await updateUserBalance(
+          user.id,
+          amount,
+          reason,
+          'add',
+          transactionAt
+        );
       }
       throw new Error('User not found');
     },
@@ -566,9 +572,15 @@ export const useEnhancedAdminUser = (userId?: string) => {
   );
 
   const deductBalance = useCallback(
-    async (amount: number, reason: string) => {
+    async (amount: number, reason: string, transactionAt?: string) => {
       if (user) {
-        return await updateUserBalance(user.id, amount, reason, 'deduct');
+        return await updateUserBalance(
+          user.id,
+          amount,
+          reason,
+          'deduct',
+          transactionAt
+        );
       }
       throw new Error('User not found');
     },
@@ -576,9 +588,15 @@ export const useEnhancedAdminUser = (userId?: string) => {
   );
 
   const setBalance = useCallback(
-    async (amount: number, reason: string) => {
+    async (amount: number, reason: string, transactionAt?: string) => {
       if (user) {
-        return await updateUserBalance(user.id, amount, reason, 'set');
+        return await updateUserBalance(
+          user.id,
+          amount,
+          reason,
+          'set',
+          transactionAt
+        );
       }
       throw new Error('User not found');
     },

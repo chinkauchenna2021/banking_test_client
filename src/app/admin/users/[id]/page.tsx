@@ -99,7 +99,8 @@ export default function EnhancedUserDetailPage() {
   const [balanceData, setBalanceData] = useState({
     type: 'add',
     amount: '',
-    reason: ''
+    reason: '',
+    transaction_at: ''
   });
   const [accountData, setAccountData] = useState({
     account_name: '',
@@ -133,21 +134,46 @@ export default function EnhancedUserDetailPage() {
       return;
     }
 
+    const transactionAt = balanceData.transaction_at
+      ? new Date(balanceData.transaction_at)
+      : undefined;
+    if (transactionAt && Number.isNaN(transactionAt.getTime())) {
+      toast.error('Please enter a valid transaction date/time');
+      return;
+    }
+
     try {
       switch (balanceData.type) {
         case 'add':
-          await addBalance(amount, balanceData.reason);
+          await addBalance(
+            amount,
+            balanceData.reason,
+            transactionAt?.toISOString()
+          );
           break;
         case 'deduct':
-          await deductBalance(amount, balanceData.reason);
+          await deductBalance(
+            amount,
+            balanceData.reason,
+            transactionAt?.toISOString()
+          );
           break;
         case 'set':
-          await setBalance(amount, balanceData.reason);
+          await setBalance(
+            amount,
+            balanceData.reason,
+            transactionAt?.toISOString()
+          );
           break;
       }
       toast.success('Balance updated successfully');
       setShowBalanceDialog(false);
-      setBalanceData({ type: 'add', amount: '', reason: '' });
+      setBalanceData({
+        type: 'add',
+        amount: '',
+        reason: '',
+        transaction_at: ''
+      });
     } catch (error: any) {
       toast.error(`Failed to update balance: ${error.message}`);
     }
@@ -698,6 +724,22 @@ export default function EnhancedUserDetailPage() {
                   setBalanceData({ ...balanceData, reason: e.target.value })
                 }
               />
+            </div>
+            <div>
+              <Label>Transaction Date/Time (optional)</Label>
+              <Input
+                type='datetime-local'
+                value={balanceData.transaction_at}
+                onChange={(e) =>
+                  setBalanceData({
+                    ...balanceData,
+                    transaction_at: e.target.value
+                  })
+                }
+              />
+              <p className='text-muted-foreground mt-1 text-xs'>
+                Leave empty to use the current time.
+              </p>
             </div>
           </div>
           <DialogFooter>

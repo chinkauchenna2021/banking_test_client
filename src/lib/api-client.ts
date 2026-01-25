@@ -1021,9 +1021,32 @@ class ApiClient {
 
   public updateUserBalance<T = any>(
     userId: string,
-    data: { amount: number; reason: string; type: 'add' | 'deduct' | 'set' }
+    data: {
+      amount: number;
+      reason: string;
+      type: 'add' | 'deduct' | 'set';
+      transaction_at?: string;
+    }
   ): Promise<T> {
     return this.post<T>(`/admin/users/${userId}/balance`, data);
+  }
+
+  public updateTransactionTimestamps<T = any>(
+    transactionId: string,
+    data: {
+      transaction_at?: string;
+      created_at?: string;
+      approved_at?: string;
+      completed_at?: string;
+      reconciled_at?: string;
+      updated_at?: string;
+      reason?: string;
+    }
+  ): Promise<T> {
+    return this.patch<T>(
+      `/admin/transactions/${transactionId}/timestamps`,
+      data
+    );
   }
 
   public bulkUpdateUserStatus<T = any>(data: {

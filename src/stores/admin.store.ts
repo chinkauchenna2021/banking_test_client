@@ -91,6 +91,10 @@ export interface AdminTransaction {
   currency: string;
   description: string;
   created_at: string;
+  approved_at?: string | null;
+  completed_at?: string | null;
+  reconciled_at?: string | null;
+  updated_at?: string | null;
   user?: {
     first_name: string;
     last_name: string;
@@ -391,7 +395,8 @@ export interface AdminStoreState {
     userId: string,
     amount: number,
     reason: string,
-    type: 'add' | 'deduct' | 'set'
+    type: 'add' | 'deduct' | 'set',
+    transactionAt?: string
   ) => Promise<any>;
   createAdminUserAccount: (userId: string, data: any) => Promise<any>;
   bulkUpdateUserStatus: (
@@ -465,6 +470,18 @@ export interface AdminStoreState {
   getTransactions: (
     params?: any
   ) => Promise<{ transactions: AdminTransaction[]; pagination: Pagination }>;
+  updateTransactionTimestamps: (
+    transactionId: string,
+    data: {
+      transaction_at?: string;
+      created_at?: string;
+      approved_at?: string;
+      completed_at?: string;
+      reconciled_at?: string;
+      updated_at?: string;
+      reason?: string;
+    }
+  ) => Promise<AdminTransaction>;
   createAdminTransfer: (data: any) => Promise<any>;
 
   // Activity Monitoring Actions
@@ -719,14 +736,16 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
     userId: string,
     amount: number,
     reason: string,
-    type: 'add' | 'deduct' | 'set'
+    type: 'add' | 'deduct' | 'set',
+    transactionAt?: string
   ) => {
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.updateUserBalance(userId, {
         amount,
         reason,
-        type
+        type,
+        transaction_at: transactionAt
       });
 
       // Update user balance in state
@@ -1349,6 +1368,51 @@ export const useAdminStore = create<AdminStoreState>((set, get) => ({
         error.response?.data?.error ||
         error.message ||
         'Failed to fetch transactions';
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  updateTransactionTimestamps: async (
+    transactionId: string,
+    data: {
+      transaction_at?: string;
+      created_at?: string;
+      approved_at?: string;
+      completed_at?: string;
+      reconciled_at?: string;
+      updated_at?: string;
+      reason?: string;
+    }
+  ) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiClient.updateTransactionTimestamps(
+        transactionId,
+        data
+      );
+      const updated = response.data;
+
+      set((state) => {
+        const nextTransactions = state.transactions.map((tx) =>
+          tx.id === transactionId ? { ...tx, ...updated } : tx
+        );
+        nextTransactions.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        return {
+          transactions: nextTransactions,
+          isLoading: false
+        };
+      });
+
+      return updated;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to update transaction timestamps';
       set({ error: errorMessage, isLoading: false });
       throw error;
     }

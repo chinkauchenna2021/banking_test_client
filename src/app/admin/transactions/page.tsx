@@ -6,6 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -22,13 +31,13 @@ import {
 } from '@/components/ui/table';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Download, ExternalLink } from 'lucide-react';
-import { format } from 'date-fns';
+import { Search, Download, Pencil } from 'lucide-react';
 
 export default function AdminTransactionsPage() {
   const {
     transactions,
     getTransactions,
+    updateTransactionTimestamps,
     transactionStats,
     isLoading,
     formatDate
@@ -38,10 +47,132 @@ export default function AdminTransactionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
+  const [timestampForm, setTimestampForm] = useState({
+    created_at: '',
+    completed_at: '',
+    approved_at: '',
+    updated_at: '',
+    reason: ''
+  });
+  const [timestampBaseline, setTimestampBaseline] = useState({
+    created_at: '',
+    completed_at: '',
+    approved_at: '',
+    updated_at: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     getTransactions();
   }, [getTransactions]);
+
+  const toLocalInput = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+  };
+
+  const openEditDialog = (tx: any) => {
+    const baseline = {
+      created_at: toLocalInput(tx.created_at),
+      completed_at: toLocalInput(tx.completed_at),
+      approved_at: toLocalInput(tx.approved_at),
+      updated_at: toLocalInput(tx.updated_at)
+    };
+    setEditingTransaction(tx);
+    setTimestampBaseline(baseline);
+    setTimestampForm({
+      ...baseline,
+      reason: ''
+    });
+  };
+
+  const closeEditDialog = () => {
+    setEditingTransaction(null);
+    setTimestampForm({
+      created_at: '',
+      completed_at: '',
+      approved_at: '',
+      updated_at: '',
+      reason: ''
+    });
+    setTimestampBaseline({
+      created_at: '',
+      completed_at: '',
+      approved_at: '',
+      updated_at: ''
+    });
+  };
+
+  const parseAndCompare = (value: string, baseline: string, label: string) => {
+    if (!value || value === baseline) return undefined;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error(`Invalid ${label} value`);
+    }
+    return parsed.toISOString();
+  };
+
+  const handleSaveTimestamps = async () => {
+    if (!editingTransaction) return;
+    try {
+      const payload: Record<string, any> = {};
+      const createdAt = parseAndCompare(
+        timestampForm.created_at,
+        timestampBaseline.created_at,
+        'created_at'
+      );
+      const completedAt = parseAndCompare(
+        timestampForm.completed_at,
+        timestampBaseline.completed_at,
+        'completed_at'
+      );
+      const approvedAt = parseAndCompare(
+        timestampForm.approved_at,
+        timestampBaseline.approved_at,
+        'approved_at'
+      );
+      const updatedAt = parseAndCompare(
+        timestampForm.updated_at,
+        timestampBaseline.updated_at,
+        'updated_at'
+      );
+
+      if (createdAt) payload.created_at = createdAt;
+      if (completedAt) payload.completed_at = completedAt;
+      if (approvedAt) payload.approved_at = approvedAt;
+      if (updatedAt) payload.updated_at = updatedAt;
+      if (timestampForm.reason.trim()) {
+        payload.reason = timestampForm.reason.trim();
+      }
+
+      if (Object.keys(payload).length === 0) {
+        toast({
+          title: 'No changes',
+          description: 'Update at least one timestamp before saving.'
+        });
+        return;
+      }
+
+      setIsSaving(true);
+      await updateTransactionTimestamps(editingTransaction.id, payload);
+      toast({
+        title: 'Transaction updated',
+        description: 'Timestamps saved successfully.'
+      });
+      closeEditDialog();
+    } catch (error: any) {
+      toast({
+        title: 'Update failed',
+        description: error.message || 'Failed to update timestamps.'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Basic client-side filtering based on the provided hook data
   const filteredTransactions = transactions.filter((tx) => {
@@ -215,18 +346,19 @@ export default function AdminTransactionsPage() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Fee</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className='py-8 text-center'>
+                  <TableCell colSpan={8} className='py-8 text-center'>
                     Loading transactions...
                   </TableCell>
                 </TableRow>
               ) : filteredTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className='py-8 text-center'>
+                  <TableCell colSpan={8} className='py-8 text-center'>
                     No transactions found
                   </TableCell>
                 </TableRow>
@@ -263,6 +395,15 @@ export default function AdminTransactionsPage() {
                         {tx.status}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        onClick={() => openEditDialog(tx)}
+                      >
+                        <Pencil className='h-4 w-4' />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -270,6 +411,99 @@ export default function AdminTransactionsPage() {
           </Table>
         </div>
       </div>
+
+      <Dialog
+        open={!!editingTransaction}
+        onOpenChange={(open) => {
+          if (!open) closeEditDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Transaction Timestamps</DialogTitle>
+            <DialogDescription>
+              {editingTransaction
+                ? `Reference: ${editingTransaction.reference}`
+                : 'Edit timestamps'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            <div>
+              <Label>Created At</Label>
+              <Input
+                type='datetime-local'
+                value={timestampForm.created_at}
+                onChange={(e) =>
+                  setTimestampForm({
+                    ...timestampForm,
+                    created_at: e.target.value
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Completed At</Label>
+              <Input
+                type='datetime-local'
+                value={timestampForm.completed_at}
+                onChange={(e) =>
+                  setTimestampForm({
+                    ...timestampForm,
+                    completed_at: e.target.value
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Approved At</Label>
+              <Input
+                type='datetime-local'
+                value={timestampForm.approved_at}
+                onChange={(e) =>
+                  setTimestampForm({
+                    ...timestampForm,
+                    approved_at: e.target.value
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Updated At</Label>
+              <Input
+                type='datetime-local'
+                value={timestampForm.updated_at}
+                onChange={(e) =>
+                  setTimestampForm({
+                    ...timestampForm,
+                    updated_at: e.target.value
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Reason (optional)</Label>
+              <Input
+                placeholder='Add a note for audit logs'
+                value={timestampForm.reason}
+                onChange={(e) =>
+                  setTimestampForm({
+                    ...timestampForm,
+                    reason: e.target.value
+                  })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={closeEditDialog}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTimestamps} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
