@@ -17,7 +17,12 @@
     "format": "prettier --write .",
     "format:check": "prettier -c -w .",
     "prepare": "husky",
-    "test": "jest"
+    "test": "jest",
+    "test:list": "playwright test --list",
+    "test:safari": "playwright test --headed webkit tests/",
+    "test:chrome": "playwright test --headed --browser=chromium tests/",
+    "test:firefox": "playwright test --headed --browser=firefox tests/",
+    "test:all": "playwright test --headed --browser=all tests/"
   },
   "lint-staged": {
     "**/*.{js,jsx,tsx,ts,css,less,scss,sass}": [
@@ -108,6 +113,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^9.3.0",
+    "@playwright/test": "^1.58.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@types/jest": "^30.0.0",

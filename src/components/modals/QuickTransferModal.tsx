@@ -68,11 +68,7 @@ export default function QuickTransferModal({
         holder_name: info.holder_name
       });
     } catch (error) {
-      setRecipientInfo({
-        valid: false,
-        account_name: '',
-        holder_name: ''
-      });
+      setRecipientInfo({ valid: false, account_name: '', holder_name: '' });
     } finally {
       setIsValidating(false);
     }
@@ -134,10 +130,7 @@ export default function QuickTransferModal({
             <Select
               value={transferData.fromAccount}
               onValueChange={(value) =>
-                setTransferData({
-                  ...transferData,
-                  fromAccount: value
-                })
+                setTransferData({ ...transferData, fromAccount: value })
               }
               required
             >
@@ -202,9 +195,7 @@ export default function QuickTransferModal({
               >
                 <div className='flex items-center gap-2'>
                   <User
-                    className={`h-4 w-4 ${
-                      recipientInfo.valid ? 'text-green-600' : 'text-red-600'
-                    }`}
+                    className={`h-4 w-4 ${recipientInfo.valid ? 'text-green-600' : 'text-red-600'}`}
                   />
                   <div>
                     {recipientInfo.valid ? (
@@ -292,10 +283,7 @@ export default function QuickTransferModal({
                 className='pl-8'
                 value={transferData.amount}
                 onChange={(e) =>
-                  setTransferData({
-                    ...transferData,
-                    amount: e.target.value
-                  })
+                  setTransferData({ ...transferData, amount: e.target.value })
                 }
                 required
               />
@@ -355,8 +343,7 @@ export default function QuickTransferModal({
               type='submit'
               className='flex-1'
               disabled={
-                isSubmitting ||
-                ((recipientInfo && !recipientInfo?.valid) as any)
+                isSubmitting || !!(recipientInfo && !recipientInfo?.valid)
               }
             >
               {isSubmitting ? (
