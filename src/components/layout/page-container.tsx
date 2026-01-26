@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Heading } from '../ui/heading';
@@ -36,6 +38,16 @@ export default function PageContainer({
   pageDescription?: string;
   pageHeaderAction?: React.ReactNode;
 }) {
+  const [isSafari, setIsSafari] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const ua = navigator.userAgent;
+    const safariDetected =
+      /^((?!chrome|android|crios|fxios|edgios|opr).)*safari/i.test(ua);
+    setIsSafari(safariDetected);
+  }, []);
+
   if (!access) {
     return (
       <div className='flex flex-1 items-center justify-center p-4 md:px-6'>
@@ -49,22 +61,31 @@ export default function PageContainer({
   }
 
   const content = isloading ? <PageSkeleton /> : children;
+  const body = (
+    <div className='flex flex-1 flex-col p-4 md:px-6'>
+      <div className='mb-4 flex items-start justify-between'>
+        <div>
+          <Heading
+            title={pageTitle ?? ''}
+            description={pageDescription ?? ''}
+          />
+        </div>
+        {pageHeaderAction ? <div>{pageHeaderAction}</div> : null}
+      </div>
+      {content}
+    </div>
+  );
 
   return scrollable ? (
-    <ScrollArea className='h-[calc(100dvh-52px)]'>
-      <div className='flex flex-1 flex-col p-4 md:px-6'>
-        <div className='mb-4 flex items-start justify-between'>
-          <div>
-            <Heading
-              title={pageTitle ?? ''}
-              description={pageDescription ?? ''}
-            />
-          </div>
-          {pageHeaderAction ? <div>{pageHeaderAction}</div> : null}
-        </div>
-        {content}
+    isSafari ? (
+      <div className='h-[calc(100dvh-52px)] min-h-[calc(100vh-52px)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]'>
+        {body}
       </div>
-    </ScrollArea>
+    ) : (
+      <ScrollArea className='h-[calc(100dvh-52px)] min-h-[calc(100vh-52px)]'>
+        {body}
+      </ScrollArea>
+    )
   ) : (
     <div className='flex flex-1 flex-col p-4 md:px-6'>
       <div className='mb-4 flex items-start justify-between'>
