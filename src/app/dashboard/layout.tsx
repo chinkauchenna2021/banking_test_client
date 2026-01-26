@@ -35,7 +35,7 @@ export default async function DashboardLayout({
         <AppSidebar />
         <SidebarInset>
           <Header />
-          <PageContainer scrollable>{children}</PageContainer>
+          <main className='flex-1'>{children}</main>
         </SidebarInset>
       </SidebarProvider>
       {/* </KBar> */}
