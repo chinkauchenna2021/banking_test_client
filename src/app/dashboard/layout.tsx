@@ -6,7 +6,6 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Loader2 } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import PageContainer from '@/components/layout/page-container';
 
 export default async function DashboardLayout({
   children
@@ -29,8 +28,7 @@ export default async function DashboardLayout({
   //   );
   // }
   return (
-    <div className='flex min-h-screen w-full bg-slate-50 dark:bg-slate-950'>
-      {/* <KBar> */}
+    <KBar>
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar />
         <SidebarInset>
@@ -38,7 +36,6 @@ export default async function DashboardLayout({
           <main className='flex-1'>{children}</main>
         </SidebarInset>
       </SidebarProvider>
-      {/* </KBar> */}
-    </div>
+    </KBar>
   );
 }
